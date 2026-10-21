@@ -1,11 +1,12 @@
-// Data layer: keeps decrypted items in memory and persists them through the codec.
-// Records on disk are { id, data } so nothing but a random id is ever stored in the clear.
+// Data layer: keeps decrypted items in memory and persists them encrypted.
+// Records on disk are { id, data: { iv, ct } }; only the random id is stored in the clear.
 import * as db from './db.js';
+import { encryptJson, decryptJson } from './crypto.js';
+import { getKey } from './vault.js';
 
-// Stage 1 placeholder. Stage 2 replaces this with AES-256-GCM using the vault key.
 const codec = {
-  encode: async (item) => item,
-  decode: async (data) => data
+  encode: (storeName, item) => encryptJson(getKey(), item, `${storeName}:${item.id}`),
+  decode: (storeName, rec) => decryptJson(getKey(), rec.data, `${storeName}:${rec.id}`)
 };
 
 const DEFAULT_FOLDERS = [
@@ -29,7 +30,7 @@ function emit() { for (const fn of listeners) fn(); }
 async function loadStore(name, map) {
   map.clear();
   for (const rec of await db.getAll(name)) {
-    const item = await codec.decode(rec.data);
+    const item = await codec.decode(name, rec);
     map.set(item.id, item);
   }
 }
@@ -40,7 +41,7 @@ async function save(storeName, map, items) {
   for (const item of items) {
     item.updatedAt = now;
     map.set(item.id, item);
-    records.push({ id: item.id, data: await codec.encode(item) });
+    records.push({ id: item.id, data: await codec.encode(storeName, item) });
   }
   await db.putMany(storeName, records);
   emit();
@@ -121,6 +122,12 @@ export async function deleteFolder(id) {
     .map((d) => ({ ...d, folderId: other.id }));
   if (moved.length) await save('docs', docs, moved);
   await save('folders', folders, [{ id, deleted: true }]);
+}
+
+// Forgets all decrypted data (on lock).
+export function clearMemory() {
+  folders.clear();
+  docs.clear();
 }
 
 export async function wipeAll() {

@@ -9,13 +9,11 @@ export function renderHome(app) {
     <header class="top">
       <div class="top-text">
         <h1 tabindex="-1">הכספת שלי</h1>
-        <p class="sub">${countLabel(store.docCount())}</p>
+        <p class="sub">${countLabel(store.docCount())} · מוצפן</p>
       </div>
       <span class="chip chip-off">${icon('cloudOff')}לא מחובר</span>
       <a class="icon-btn" href="#/settings" aria-label="הגדרות">${icon('settings')}</a>
     </header>
-
-    <p class="note note-warn">${icon('alert')}<span>גרסת פיתוח: ההצפנה עוד לא פעילה. אל תשמור מסמכים אמיתיים בשלב הזה.</span></p>
 
     <label class="search">
       ${icon('search')}

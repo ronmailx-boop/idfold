@@ -62,6 +62,10 @@ export async function put(store, record) {
   return putMany(store, [record]);
 }
 
+export async function clear(store) {
+  return done((await tx(store, 'readwrite')).clear());
+}
+
 export async function destroy() {
   if (dbPromise) (await dbPromise).close();
   dbPromise = null;
