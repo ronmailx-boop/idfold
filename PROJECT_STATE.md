@@ -1,7 +1,7 @@
 # PROJECT_STATE — IDfold
 
 ## Current Focus
-שלב 5 הושלם ומוזג ל-main. Client ID אמיתי הוכנס ל-`js/config.js` (גרסה 0.5.1; פרויקט Google Cloud בשם IDfold, External במצב Testing, משתמשי בדיקה: vplusstudio.app@gmail.com, ronmailx@gmail.com; origins: https://ronmailx-boop.github.io ו-https://idfold.vplusstudio.app). פריסה ל-Cloudflare Workers (worker בשם idfold, דומיין idfold.vplusstudio.app, גרסה 0.5.2) מוכנה וממוזגת; ממתין ל-Secret `CLOUDFLARE_API_TOKEN` מהמשתמש. הבא: בדיקה אמיתית מול Google בטלפון בכתובת הרשמית. ממתין לאישור לפני שלב 6 (PIN/WebAuthn PRF, נעילה אוטומטית, ליטוש PWA).
+שלב 5 הושלם ומוזג ל-main. Client ID אמיתי הוכנס ל-`js/config.js` (גרסה 0.5.1; פרויקט Google Cloud בשם IDfold, External במצב Testing, משתמשי בדיקה: vplusstudio.app@gmail.com, ronmailx@gmail.com; origins: https://ronmailx-boop.github.io ו-https://idfold.vplusstudio.app). פריסה ל-Cloudflare Workers (worker בשם idfold, דומיין idfold.vplusstudio.app, גרסה 0.5.2) פעילה: הפריסה הראשונה הצליחה (21.10.2026), עם idfold.ronmailx.workers.dev ו-idfold.vplusstudio.app (custom domain). הבא: בדיקה אמיתית מול Google בטלפון בכתובת הרשמית. ממתין לאישור לפני שלב 6 (PIN/WebAuthn PRF, נעילה אוטומטית, ליטוש PWA).
 
 ## החלטות
 - אירוח: הכתובת הרשמית https://idfold.vplusstudio.app (Cloudflare Workers static assets, workers_dev נשאר פעיל). GitHub Pages נשאר במקביל. ה-SW שומר במטמון עותק לא-מופנה (`unredirect`) כי Cloudflare מפנה index.html ל-`/`.
