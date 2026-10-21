@@ -3,6 +3,8 @@ import { icon } from '../ui/icons.js';
 import { esc, countLabel, toast } from '../ui/util.js';
 import { createFolderFlow } from '../ui/folder-sheets.js';
 import { docCard, addDocFlow } from '../ui/docs.js';
+import * as sync from '../sync.js';
+import { paintChip } from '../ui/sync.js';
 
 // Kept while the app is open, so coming back from a document keeps the results.
 let query = '';
@@ -14,7 +16,8 @@ export function renderHome(app) {
         <h1 tabindex="-1">הכספת שלי</h1>
         <p class="sub">${countLabel(store.docCount())} · מוצפן</p>
       </div>
-      <span class="chip chip-off">${icon('cloudOff')}לא מחובר</span>
+      <a class="chip" href="#/settings" data-sync aria-describedby="sync-label"></a>
+      <span class="sr-only" id="sync-label">מצב הגיבוי. מעבר להגדרות</span>
       <a class="icon-btn" href="#/settings" aria-label="הגדרות">${icon('settings')}</a>
     </header>
 
@@ -38,7 +41,11 @@ export function renderHome(app) {
     renderBody(body);
   });
   app.querySelector('#add-doc').onclick = () => addDocFlow(null);
+  const chip = app.querySelector('[data-sync]');
+  paintChip(chip, sync.getStatus());
+  const stop = sync.onStatus((st) => paintChip(chip, st));
   renderBody(body);
+  return { cleanup: stop };
 }
 
 function renderBody(body) {

@@ -200,6 +200,11 @@ export async function readFile(id) {
   return decryptBytes(getKey(), rec.data, `blobs:${id}`);
 }
 
+// Every folder and document, tombstones included (for the backup).
+export function snapshot() {
+  return { folders: [...folders.values()], docs: [...docs.values()] };
+}
+
 // Forgets all decrypted data (on lock).
 export function clearMemory() {
   folders.clear();

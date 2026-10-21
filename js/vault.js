@@ -4,10 +4,15 @@ import * as c from './crypto.js';
 
 let header = null;
 let key = null;
+const headerListeners = new Set();
+
+// Called after the password or recovery code changes (the backup must carry the new header).
+export function onHeaderChange(fn) { headerListeners.add(fn); }
 
 async function saveHeader(next) {
   await db.put('meta', { id: 'vault', data: next });
   header = next;
+  for (const fn of headerListeners) fn();
 }
 
 export async function load() {
@@ -16,6 +21,7 @@ export async function load() {
 }
 
 export const exists = () => !!header;
+export const getHeader = () => header;
 export const isOpen = () => !!key;
 
 export function getKey() {

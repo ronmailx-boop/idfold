@@ -1,5 +1,6 @@
 import * as store from './store.js';
 import * as vault from './vault.js';
+import * as sync from './sync.js';
 import { start, currentRoute } from './router.js';
 import { renderSetup } from './views/setup.js';
 import { renderLock } from './views/lock.js';
@@ -43,6 +44,7 @@ let routerStarted = false;
 async function enterApp() {
   setDark(false);
   await store.init();
+  await sync.init();
   if (routerStarted) onRoute(currentRoute());
   else {
     routerStarted = true;

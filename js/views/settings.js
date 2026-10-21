@@ -8,6 +8,9 @@ import { passwordInput, newPasswordFields, bindNewPassword, bindToggles, showErr
 import { recoverySteps } from '../ui/recovery.js';
 import { WrongSecretError, generateRecoveryCode } from '../crypto.js';
 import { APP_VERSION } from '../version.js';
+import * as sync from '../sync.js';
+import * as google from '../google.js';
+import { paintChip, formatWhen } from '../ui/sync.js';
 
 const soon = (stage) => `<span class="soon">שלב ${stage}</span>`;
 
@@ -22,11 +25,12 @@ export function renderSettings(app) {
       <h2 class="group-title" id="g-sync">גיבוי וסנכרון</h2>
       <div class="card card-pad">
         <div class="drive">
-          <span class="row-icon">${icon('cloudOff')}</span>
-          <span class="row-text"><strong>Google Drive</strong><small>לא מחובר</small></span>
-          <span class="chip chip-off">לא מחובר</span>
+          <span class="row-icon" data-drive-icon></span>
+          <span class="row-text"><strong>Google Drive</strong><small data-drive-sub></small></span>
+          <span class="chip" data-chip></span>
         </div>
-        <button type="button" class="btn btn-secondary btn-block" disabled>${icon('refresh')}סנכרן עכשיו</button>
+        <p class="sync-error" role="status" data-sync-error></p>
+        <button type="button" class="btn btn-block" data-sync-btn></button>
       </div>
     </section>
 
@@ -56,9 +60,9 @@ export function renderSettings(app) {
     <section class="group" aria-labelledby="g-data">
       <h2 class="group-title" id="g-data">נתונים</h2>
       <div class="card">
-        <button type="button" class="row" disabled>
+        <button type="button" class="row" id="google-logout">
           <span class="row-icon">${icon('logout')}</span>
-          <span class="row-text">התנתקות מ-Google</span>${soon(4)}
+          <span class="row-text">התנתקות מ-Google<small>הגיבוי ב-Drive נשאר מוצפן</small></span>
         </button>
         <button type="button" class="row danger" id="wipe">
           <span class="row-icon">${icon('trash')}</span>
@@ -71,6 +75,7 @@ export function renderSettings(app) {
 
   app.classList.add('no-bar');
   app.querySelector('[data-back]').onclick = back;
+  const stopSync = bindSync(app);
   app.querySelector('#change-password').onclick = changePasswordSheet;
   app.querySelector('#new-code').onclick = newRecoveryCodeSheet;
   app.querySelector('#wipe').onclick = async () => {
@@ -88,6 +93,56 @@ export function renderSettings(app) {
       toast('המחיקה נכשלה. סגור את האפליקציה בלשוניות אחרות ונסה שוב.');
     }
   };
+  return { cleanup: stopSync };
+}
+
+// The Drive card and the sign-out row follow the backup status live.
+function bindSync(app) {
+  const $ = (sel) => app.querySelector(sel);
+  const button = $('[data-sync-btn]');
+  const logout = $('#google-logout');
+  google.preload()?.catch(() => {});
+
+  function paint(st) {
+    const connected = sync.isConnected();
+    $('[data-drive-icon]').innerHTML = icon(connected ? 'cloud' : 'cloudOff');
+    paintChip($('[data-chip]'), st);
+    let sub;
+    if (!google.isConfigured()) sub = 'החיבור עדיין לא הוגדר. ההוראות נמצאות בקובץ README.';
+    else if (!connected) sub = 'גיבוי מוצפן לתיקייה IDfold ב-Drive שלך';
+    else if (st.phase === 'busy') sub = st.total ? `מגבה קבצים: ${st.done} מתוך ${st.total}` : 'מגבה…';
+    else sub = [st.email, st.lastBackup ? `גיבוי אחרון: ${formatWhen(st.lastBackup)}` : ''].filter(Boolean).join(' · ');
+    $('[data-drive-sub]').textContent = sub;
+    const error = $('[data-sync-error]');
+    error.textContent = st.error ? sync.MESSAGES[st.error] : '';
+    error.hidden = !st.error;
+    button.className = `btn btn-block ${connected ? 'btn-secondary' : 'btn-primary'}`;
+    button.innerHTML = connected ? `${icon('refresh')}סנכרן עכשיו` : `${icon('cloud')}חבר את Google Drive`;
+    button.disabled = !google.isConfigured() || st.phase === 'busy';
+    logout.disabled = !connected;
+  }
+
+  // No await before the call: the Google window must open inside the tap.
+  button.onclick = () => {
+    (sync.isConnected() ? sync.backup({ interactive: true }) : sync.connect()).catch(() => {});
+  };
+  logout.onclick = async () => {
+    const ok = await confirmSheet({
+      title: 'להתנתק מ-Google?',
+      message: 'הגיבוי האוטומטי ייפסק. הקבצים שכבר גובו נשארים מוצפנים בתיקייה IDfold ב-Drive.',
+      confirmLabel: 'התנתק'
+    });
+    if (!ok) return;
+    try {
+      await sync.disconnect();
+      toast('התנתקת מ-Google');
+    } catch {
+      toast('ההתנתקות נכשלה. נסה שוב.');
+    }
+  };
+
+  paint(sync.getStatus());
+  return sync.onStatus(paint);
 }
 
 // Wrong current password → message in errorEl; resolves true when work succeeded.

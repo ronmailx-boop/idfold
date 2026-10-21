@@ -212,6 +212,8 @@ a { color: var(--primary-ink); }
 
 .drive { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .drive .row-text strong { font-weight: 500; }
+.drive .row-text small { overflow-wrap: anywhere; }
+.sync-error { margin: 0 0 14px; padding: 10px 12px; border-radius: var(--r-btn); background: var(--warn-bg); color: var(--warn); font-size: 14px; }
 
 .switch {
   position: relative; width: 52px; height: 32px; flex: none;

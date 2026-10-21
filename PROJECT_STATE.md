@@ -1,7 +1,7 @@
 # PROJECT_STATE — IDfold
 
 ## Current Focus
-שלב 3 הושלם ומוזג ל-main. ממתין לאישור המשתמש לפני תחילת שלב 4 (התחברות Google, תיקיית IDfold, גיבוי חד-כיווני והוראות Google Cloud).
+שלב 4 הושלם ומוזג ל-main. חסר: המשתמש צריך ליצור Client ID לפי ה-README ולהכניס אותו ל-`js/config.js` (או לשלוח בצ'אט). ממתין לאישור לפני שלב 5 (סנכרון דו-כיווני, שחזור במכשיר חדש, offline queue, רענון טוקן שקט).
 
 ## החלטות
 - אחרי כל שלב: commit לענף העבודה ומיזוג ל-`main` (בקשת המשתמש: "תמיד אתה תמזג ל-main").
@@ -26,10 +26,19 @@
 - שיתוף: ה-File מוכן מראש, ו-`navigator.share` נקרא ישירות מהלחיצה על "שתף בכל זאת".
 - בדיקת e2e לשלב 3: `e2e3.mjs` ב-scratchpad (לא בריפו).
 
+- שלב 4: GIS token client (`js/google.js`), הטוקן בזיכרון בלבד. בקשת טוקן רק מלחיצה (חלון Google). בלי טוקן הגיבוי האוטומטי עובר ל"ממתין" עם בקשה ללחוץ "סנכרן עכשיו".
+- מבנה ב-Drive: `IDfold/idfold-data.enc` = JSON `{ app:'idfold', v:1, header, data:{iv,ct} }`, ה-data הוא `{ folders, docs }` כולל tombstones, מוצפן עם AAD `idfold-data` ו-IV חדש בכל כתיבה. `IDfold/files/<docId>` = IV(12) ואחריו ה-ciphertext מהרשומה המקומית (AAD `blobs:<id>`).
+- סדר גיבוי: קבצים חסרים ← קובץ הנתונים ← מחיקת קבצים מיותרים (מסמכים שנמחקו). בכל גיבוי משווים לרשימת `files` ב-Drive (אין מפת העלאות מקומית).
+- מצב החיבור נשמר מוצפן ב-`meta/sync` (AAD `meta:sync`): `{ email, rootId, filesId, dataId, pending, lastBackup }`.
+- אם ב-Drive יש `idfold-data.enc` שלא נפתח במפתח הנוכחי (כספת אחרת) — לא דורסים, החיבור מבוטל עם הודעה.
+- שגיאות Drive: 401 → auth, 404 → חיפוש תיקיות מחדש, 429/5xx/rateLimit → backoff עד 4 ניסיונות, storageQuota → quota, שגיאת רשת → offline.
+- בשלב 6: ה-header שעולה ל-Drive (`vault.getHeader()`) חייב לסנן את ה-slot המקומי של PIN/WebAuthn.
+- CSP: נוספו `accounts.google.com/gsi/*` ו-`www.googleapis.com`. בדיקת e2e לשלב 4: `e2e4.mjs` ב-scratchpad, עם Drive מדומה.
+
 ## שלבים
 - [x] 1. שלד PWA + IndexedDB + תיקיות עם עריכה מלאה (הוספה, שם, אייקון/צבע, מחיקה, גרירה)
 - [x] 2. מודול הצפנה: סיסמה, קוד שחזור, DEK עטוף פעמיים, מסך נעילה, שינוי סיסמה, בדיקות (מחיקת נתוני שלב 1 הלא-מוצפנים)
 - [x] 3. הוספת קבצים מהבורר, שמירה מוצפנת, צפייה (zoom, pdf.js), שיתוף, חיפוש
-- [ ] 4. התחברות Google (drive.file), תיקיית IDfold וגיבוי חד-כיווני + הוראות הקמה ל-Google Cloud
+- [x] 4. התחברות Google (drive.file), תיקיית IDfold וגיבוי חד-כיווני + הוראות הקמה ל-Google Cloud
 - [ ] 5. סנכרון דו-כיווני ומיזוג, offline queue, חיווי סטטוס
 - [ ] 6. נעילה מהירה (PIN + WebAuthn PRF), נעילה אוטומטית, ליטוש PWA
