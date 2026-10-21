@@ -1,5 +1,5 @@
 // Offline support: precache the app shell, serve it cache-first.
-const CACHE_VERSION = '0.5.1'; // keep in sync with js/version.js
+const CACHE_VERSION = '0.5.2'; // keep in sync with js/version.js
 const CACHE = `idfold-${CACHE_VERSION}`;
 const FONT_CACHE = 'idfold-fonts';
 
@@ -45,12 +45,26 @@ const SHELL = [
   './icons/icon-maskable-512.png'
 ];
 
+// Some hosts (Cloudflare) redirect index.html to "/". A browser refuses a redirected response
+// for a navigation, so the cache keeps a plain copy.
+async function unredirect(response) {
+  if (!response.redirected) return response;
+  return new Response(await response.blob(), {
+    status: response.status, statusText: response.statusText, headers: response.headers
+  });
+}
+
+async function precache() {
+  const cache = await caches.open(CACHE);
+  await Promise.all(SHELL.map(async (url) => {
+    const res = await fetch(new Request(url, { cache: 'reload' }));
+    if (!res.ok) throw new Error(`precache ${url}: ${res.status}`);
+    await cache.put(url, await unredirect(res));
+  }));
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE)
-      .then((cache) => cache.addAll(SHELL.map((url) => new Request(url, { cache: 'reload' }))))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(precache().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {

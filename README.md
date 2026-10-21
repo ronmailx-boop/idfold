@@ -3,7 +3,7 @@
 כספת פשוטה ומוצפנת למסמכי זהות (דרכון, תעודת זהות, רישיון נהיגה ועוד).
 אפליקציית PWA סטטית: בלי שרת, בלי Firebase. ההצפנה מתבצעת בדפדפן (Web Crypto API), והגיבוי נשמר מוצפן ב-Google Drive שלך.
 
-כתובת האפליקציה: https://ronmailx-boop.github.io/idfold/
+כתובת האפליקציה: https://idfold.vplusstudio.app (הכתובת הרשמית, Cloudflare). גם https://ronmailx-boop.github.io/idfold/ ממשיכה לעבוד, אבל לכל כתובת כספת נפרדת במכשיר.
 
 > **סטטוס:** שלב 5 מתוך 6 (סנכרון דו-כיווני מוצפן עם Google Drive ושחזור במכשיר חדש). נעילה מהירה ונעילה אוטומטית יגיעו בשלב 6.
 
@@ -52,7 +52,7 @@
 **4. מזהה הלקוח (Client ID)**
 1. בתפריט הצד: **Clients** ← **Create client**.
 2. **Application type**: `Web application`. **Name**: `IDfold web`.
-3. תחת **Authorized JavaScript origins** ← **Add URI** ← `https://ronmailx-boop.github.io` (בדיוק כך: בלי `/idfold` ובלי `/` בסוף).
+3. תחת **Authorized JavaScript origins** ← **Add URI** ← `https://idfold.vplusstudio.app` ו-`https://ronmailx-boop.github.io` (בדיוק כך: בלי נתיב ובלי `/` בסוף).
 4. אין צורך ב-**Authorized redirect URIs** ← **Create**.
 5. העתק את ה-**Client ID** (נגמר ב-`.apps.googleusercontent.com`).
 
@@ -98,3 +98,7 @@
 ## בדיקות
 
 בדיקות ההצפנה רצות ב-Node 20 ומעלה: `npm test`.
+
+## פריסה ל-Cloudflare
+כל push ל-`main` מעלה את האתר ל-Cloudflare Workers (`.github/workflows/deploy-cloudflare.yml`, `wrangler.jsonc`). מה שלא עולה לאתר מוגדר ב-`.assetsignore`.
+צריך פעם אחת Secret בשם `CLOUDFLARE_API_TOKEN` בריפו (תבנית "Edit Cloudflare Workers"). בלעדיו הפריסה מדלגת ולא נכשלת.

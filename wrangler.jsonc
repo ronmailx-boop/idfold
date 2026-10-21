@@ -1,0 +1,8 @@
+// Cloudflare Workers: serves the app as static assets (no Worker script).
+{
+  "name": "idfold",
+  "compatibility_date": "2026-10-21",
+  "assets": { "directory": "." },
+  "workers_dev": true,
+  "routes": [{ "pattern": "idfold.vplusstudio.app", "custom_domain": true }]
+}
