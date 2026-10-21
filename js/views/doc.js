@@ -125,8 +125,12 @@ export function renderDoc(app, id) {
     const doc = current();
     try {
       bytes = await store.readFile(id);
-    } catch {
-      if (!closed) showMessage('לא ניתן לפענח את הקובץ.');
+    } catch (err) {
+      if (!closed) {
+        showMessage(err.message === 'file missing'
+          ? 'הקובץ עדיין לא ירד מהגיבוי ב-Google Drive. הוא יורד בסנכרון הבא, כשיש חיבור לאינטרנט.'
+          : 'לא ניתן לפענח את הקובץ.');
+      }
       return;
     }
     if (closed) return;

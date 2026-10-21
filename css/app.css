@@ -424,3 +424,7 @@ input[type="date"].input { min-width: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Restore ---------- */
+.setup .link-btn { margin: 0 auto; color: var(--primary); }
+.restore-progress { color: var(--text-2); font-size: 14px; }

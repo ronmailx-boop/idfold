@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 const CHIPS = {
   off: { cls: 'chip-off', icon: 'cloudOff', text: 'לא מחובר' },
   pending: { cls: 'chip-wait', icon: 'cloud', text: 'ממתין' },
-  busy: { cls: 'chip-wait', icon: 'cloud', text: 'מגבה…' },
+  busy: { cls: 'chip-wait', icon: 'cloud', text: 'מסנכרן…' },
   synced: { cls: 'chip-ok', icon: 'cloud', text: 'מסונכרן' }
 };
 

@@ -1,9 +1,11 @@
 // First run: choose a password, then save and confirm the recovery code.
 import * as vault from '../vault.js';
+import * as google from '../google.js';
 import { generateRecoveryCode } from '../crypto.js';
 import { icon } from '../ui/icons.js';
 import { newPasswordFields, bindNewPassword, bindToggles } from '../ui/password.js';
 import { recoverySteps, NO_RECOVERY_WARNING } from '../ui/recovery.js';
+import { renderRestore } from './restore.js';
 
 export function renderSetup(app, onCreated) {
   app.innerHTML = `
@@ -19,8 +21,12 @@ export function renderSetup(app, onCreated) {
           <button type="submit" class="btn btn-lg btn-primary">המשך</button>
         </form>
       </div>
+      ${google.isConfigured() ? '<button type="button" class="link-btn" data-restore>יש לי גיבוי ב-Google Drive</button>' : ''}
     </div>`;
   app.classList.add('no-bar');
+
+  const restore = app.querySelector('[data-restore]');
+  if (restore) restore.onclick = () => renderRestore(app, { onDone: onCreated, onBack: () => renderSetup(app, onCreated) });
 
   const step = app.querySelector('#setup-step');
   const form = step.querySelector('form');

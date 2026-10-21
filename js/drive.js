@@ -78,6 +78,14 @@ export async function exists(token, id) {
   }
 }
 
+// The file's version, which grows on every change. Throws 'notfound' if it was deleted or trashed.
+export async function version(token, id) {
+  const res = await call(token, `${API}/files/${encodeURIComponent(id)}?fields=trashed,version`);
+  const body = await res.json();
+  if (body.trashed) throw new DriveError('notfound');
+  return String(body.version);
+}
+
 export async function createFolder(token, name, parentId) {
   const res = await call(token, `${API}/files?fields=id`, {
     method: 'POST',
@@ -88,11 +96,12 @@ export async function createFolder(token, name, parentId) {
 }
 
 // Resumable upload (works for any size). Creates the file, or replaces its content if id is given.
+// Returns { id, version }.
 export async function upload(token, { id, name, parentId, body }) {
   const blob = body instanceof Blob ? body : new Blob([body]);
   const start = await call(token, id
-    ? `${UPLOAD}/files/${encodeURIComponent(id)}?uploadType=resumable`
-    : `${UPLOAD}/files?uploadType=resumable`, {
+    ? `${UPLOAD}/files/${encodeURIComponent(id)}?uploadType=resumable&fields=id,version`
+    : `${UPLOAD}/files?uploadType=resumable&fields=id,version`, {
     method: id ? 'PATCH' : 'POST',
     headers: {
       'Content-Type': 'application/json; charset=UTF-8',
@@ -104,7 +113,8 @@ export async function upload(token, { id, name, parentId, body }) {
   const session = start.headers.get('Location');
   if (!session) throw new DriveError('failed');
   const res = await call(token, session, { method: 'PUT', headers: { 'Content-Type': BINARY }, body: blob });
-  return (await res.json()).id;
+  const file = await res.json();
+  return { id: file.id, version: String(file.version) };
 }
 
 export async function download(token, id) {

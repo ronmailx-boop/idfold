@@ -9,10 +9,35 @@ const headerListeners = new Set();
 // Called after the password or recovery code changes (the backup must carry the new header).
 export function onHeaderChange(fn) { headerListeners.add(fn); }
 
-async function saveHeader(next) {
+// The header carries when it last changed, so the newest one wins between devices. The time is
+// encrypted with the data key and bound to the wraps, so it can't be read or moved to other wraps.
+const stampAad = (h) => `idfold-header:${JSON.stringify({ password: h.wraps?.password, recovery: h.wraps?.recovery })}`;
+
+async function stamp(h, k) {
+  const box = await c.encryptJson(k, Date.now(), stampAad(h));
+  return { ...h, at: { iv: c.toB64(box.iv), ct: c.toB64(box.ct) } };
+}
+
+// When the header last changed (ms), or 0 if unknown. Needs the vault to be open.
+export async function headerTime(h = header) {
+  try {
+    return await c.decryptJson(getKey(), { iv: c.fromB64(h.at.iv), ct: c.fromB64(h.at.ct) }, stampAad(h));
+  } catch {
+    return 0;
+  }
+}
+
+async function saveHeader(next, k = key) {
+  next = await stamp(next, k);
   await db.put('meta', { id: 'vault', data: next });
   header = next;
   for (const fn of headerListeners) fn();
+}
+
+// A newer header from another device (or from the backup when restoring), kept as it is.
+export async function adoptHeader(next) {
+  await db.put('meta', { id: 'vault', data: next });
+  header = next;
 }
 
 export async function load() {
@@ -32,14 +57,20 @@ export function getKey() {
 export async function create(password, recoveryCode) {
   // Drop anything stored before encryption existed (stage 1 data was not encrypted).
   for (const store of ['folders', 'docs', 'blobs']) await db.clear(store);
+  await db.del('meta', 'sync');
   const vault = await c.createVault(password, recoveryCode);
-  await saveHeader(vault.header);
+  await saveHeader(vault.header, vault.key);
   key = vault.key;
 }
 
 // slot: 'password' | 'recovery'. Throws c.WrongSecretError on a wrong secret.
 export async function unlock(slot, secret) {
   key = await c.openVault(header, slot, secret);
+}
+
+// Restoring on a new device: opens a backup's header. Nothing is saved until adoptHeader().
+export async function unlockBackup(backupHeader, slot, secret) {
+  key = await c.openVault(backupHeader, slot, secret);
 }
 
 // Throws c.WrongSecretError if the password is wrong.

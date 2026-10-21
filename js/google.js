@@ -32,13 +32,15 @@ export function preload() {
 }
 
 // Must be called from a tap: Google shows a window (it closes by itself once access was given).
-export async function requestToken() {
+// hint: the account's email, so Google does not ask which account to use.
+export async function requestToken(hint = '') {
   if (!isConfigured()) throw new AuthError('failed');
   const oauth2 = await preload();
   return new Promise((resolve, reject) => {
     const client = oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: SCOPE,
+      login_hint: hint,
       callback: (resp) => {
         if (resp.error) return reject(new AuthError(resp.error === 'access_denied' ? 'denied' : 'failed'));
         if (!oauth2.hasGrantedAllScopes(resp, SCOPE)) return reject(new AuthError('denied'));

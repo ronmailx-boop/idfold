@@ -25,8 +25,9 @@ const folders = new Map();
 const docs = new Map();
 const listeners = new Set();
 
+// Listeners get { remote: true } when the change came from another device (the sync merge).
 export function onChange(fn) { listeners.add(fn); }
-function emit() { for (const fn of listeners) fn(); }
+function emit(info = {}) { for (const fn of listeners) fn(info); }
 
 async function loadStore(name, map) {
   map.clear();
@@ -36,7 +37,7 @@ async function loadStore(name, map) {
   }
 }
 
-async function save(storeName, map, items) {
+async function save(storeName, map, items, info) {
   const now = Date.now();
   const records = [];
   for (const item of items) {
@@ -45,7 +46,7 @@ async function save(storeName, map, items) {
     records.push({ id: item.id, data: await codec.encode(storeName, item) });
   }
   await db.putMany(storeName, records);
-  emit();
+  emit(info);
 }
 
 export async function init() {
@@ -203,6 +204,89 @@ export async function readFile(id) {
 // Every folder and document, tombstones included (for the backup).
 export function snapshot() {
   return { folders: [...folders.values()], docs: [...docs.values()] };
+}
+
+// ---------- Sync merge ----------
+
+const ID_RE = /^[0-9a-f-]{36}$/;
+const pick = (item, keys) => Object.fromEntries(keys.filter((k) => k in item).map((k) => [k, item[k]]));
+
+// Items from the backup are checked like any other input before they are stored or shown.
+function cleanRemote(kind, item) {
+  if (!item || typeof item.id !== 'string' || !ID_RE.test(item.id) || !Number.isFinite(item.updatedAt)) return null;
+  if (item.deleted) return { id: item.id, deleted: true, updatedAt: item.updatedAt };
+  if (kind === 'folders') {
+    return {
+      ...pick(item, ['icon', 'color', 'order', 'createdAt', 'updatedAt']),
+      id: item.id, name: cleanText(item.name), keep: item.keep === true
+    };
+  }
+  return {
+    ...pick(item, ['folderId', 'mime', 'size', 'thumb', 'createdAt', 'updatedAt']),
+    id: item.id,
+    name: cleanText(item.name) || 'מסמך',
+    note: cleanText(item.note, NOTE_MAX, true),
+    expiry: EXPIRY_RE.test(item.expiry || '') ? item.expiry : '',
+    thumb: typeof item.thumb === 'string' && item.thumb.startsWith('data:image/jpeg;base64,') ? item.thumb : ''
+  };
+}
+
+// Merges another device's folders and documents: for each id the newest updatedAt wins, deletions
+// included. Returns true if this device has changes the other side doesn't (they need uploading).
+export async function merge(remote) {
+  let ahead = false;
+  let changed = false;
+  const dropped = [];
+  for (const [kind, map] of [['folders', folders], ['docs', docs]]) {
+    const theirs = new Map();
+    for (const raw of Array.isArray(remote?.[kind]) ? remote[kind] : []) {
+      const item = cleanRemote(kind, raw);
+      if (item) theirs.set(item.id, item);
+    }
+    const records = [];
+    for (const item of theirs.values()) {
+      const mine = map.get(item.id);
+      if (mine && mine.updatedAt >= item.updatedAt) {
+        if (mine.updatedAt > item.updatedAt) ahead = true;
+        continue;
+      }
+      map.set(item.id, item);
+      records.push({ id: item.id, data: await codec.encode(kind, item) });
+      if (kind === 'docs' && item.deleted) dropped.push(item.id);
+    }
+    for (const id of map.keys()) if (!theirs.has(id)) ahead = true;
+    if (records.length) {
+      await db.putMany(kind, records);
+      changed = true;
+    }
+  }
+  for (const id of dropped) await db.del('blobs', id);
+  // A folder deleted on one device while a document was moved into it on another.
+  const other = otherFolder();
+  const orphans = [...docs.values()].filter((d) => !d.deleted && !getFolder(d.folderId));
+  if (other && orphans.length) {
+    await save('docs', docs, orphans.map((d) => ({ ...d, folderId: other.id })), { remote: true });
+    ahead = true;
+  } else if (changed) {
+    emit({ remote: true });
+  }
+  return ahead;
+}
+
+// New device: replaces everything here with the backup's folders and documents.
+export async function importSnapshot(remote) {
+  folders.clear();
+  docs.clear();
+  for (const name of ['folders', 'docs', 'blobs']) await db.clear(name);
+  await merge(remote);
+}
+
+// Saves a document's file as downloaded from the backup (IV followed by the ciphertext).
+// The file is decrypted once to make sure it is whole and belongs to this document.
+export async function putDownloadedFile(id, buffer) {
+  const data = { iv: new Uint8Array(buffer.slice(0, 12)), ct: buffer.slice(12) };
+  await decryptBytes(getKey(), data, `blobs:${id}`);
+  await db.put('blobs', { id, data });
 }
 
 // Forgets all decrypted data (on lock).

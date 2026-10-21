@@ -42,6 +42,10 @@ export async function getAll(store) {
   return done((await tx(store, 'readonly')).getAll());
 }
 
+export async function keys(store) {
+  return done((await tx(store, 'readonly')).getAllKeys());
+}
+
 export async function get(store, id) {
   return done((await tx(store, 'readonly')).get(id));
 }

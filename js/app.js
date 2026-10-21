@@ -8,6 +8,7 @@ import { renderHome } from './views/home.js';
 import { renderFolder } from './views/folder.js';
 import { renderSettings } from './views/settings.js';
 import { renderDoc } from './views/doc.js';
+import { toast } from './ui/util.js';
 
 const app = document.getElementById('app');
 const themeColor = document.querySelector('meta[name=theme-color]');
@@ -41,10 +42,13 @@ function onRoute(route) {
 }
 
 let routerStarted = false;
+let entered = false;
 async function enterApp() {
   setDark(false);
   await store.init();
   await sync.init();
+  sync.resume();
+  entered = true;
   if (routerStarted) onRoute(currentRoute());
   else {
     routerStarted = true;
@@ -97,10 +101,12 @@ async function main() {
   // Ask the browser not to evict the vault under storage pressure.
   navigator.storage?.persist?.().catch(() => {});
   store.onChange(() => {
-    if (!vault.isOpen()) return;
+    if (!entered || !vault.isOpen()) return;
     if (screen?.refresh) screen.refresh();
     else render(currentRoute());
   });
+
+  sync.onNotice(() => toast('סיסמת ההצפנה שונתה במכשיר אחר. מעכשיו פותחים עם הסיסמה החדשה.'));
 
   if (vault.exists()) {
     setDark(true);

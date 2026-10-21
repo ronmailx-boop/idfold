@@ -109,9 +109,9 @@ function bindSync(app) {
     paintChip($('[data-chip]'), st);
     let sub;
     if (!google.isConfigured()) sub = 'החיבור עדיין לא הוגדר. ההוראות נמצאות בקובץ README.';
-    else if (!connected) sub = 'גיבוי מוצפן לתיקייה IDfold ב-Drive שלך';
-    else if (st.phase === 'busy') sub = st.total ? `מגבה קבצים: ${st.done} מתוך ${st.total}` : 'מגבה…';
-    else sub = [st.email, st.lastBackup ? `גיבוי אחרון: ${formatWhen(st.lastBackup)}` : ''].filter(Boolean).join(' · ');
+    else if (!connected) sub = 'גיבוי וסנכרון מוצפנים לתיקייה IDfold ב-Drive שלך';
+    else if (st.phase === 'busy') sub = st.total ? `מסנכרן קבצים: ${st.done} מתוך ${st.total}` : 'מסנכרן…';
+    else sub = [st.email, st.lastBackup ? `סנכרון אחרון: ${formatWhen(st.lastBackup)}` : ''].filter(Boolean).join(' · ');
     $('[data-drive-sub]').textContent = sub;
     const error = $('[data-sync-error]');
     error.textContent = st.error ? sync.MESSAGES[st.error] : '';
@@ -129,7 +129,7 @@ function bindSync(app) {
   logout.onclick = async () => {
     const ok = await confirmSheet({
       title: 'להתנתק מ-Google?',
-      message: 'הגיבוי האוטומטי ייפסק. הקבצים שכבר גובו נשארים מוצפנים בתיקייה IDfold ב-Drive.',
+      message: 'הסנכרון האוטומטי ייפסק. הקבצים שכבר גובו נשארים מוצפנים בתיקייה IDfold ב-Drive.',
       confirmLabel: 'התנתק'
     });
     if (!ok) return;

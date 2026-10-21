@@ -1,10 +1,14 @@
 // Lock screen: open with the password, or with the recovery code and then set a new password.
 import * as vault from '../vault.js';
 import { WrongSecretError, isRecoveryCodeShape } from '../crypto.js';
+import * as google from '../google.js';
+import { icon } from '../ui/icons.js';
 import { passwordInput, bindToggles, newPasswordFields, bindNewPassword, showError, busy } from '../ui/password.js';
 
 export function renderLock(app, onUnlocked, mode = 'password') {
   const recovery = mode === 'recovery';
+  // Ready before the tap, so Google's window can open right after unlocking (to renew Drive access).
+  google.preload()?.catch(() => {});
   app.innerHTML = `
     <section class="lock">
       <img class="logo" src="icons/icon.svg" alt="" width="80" height="80">
@@ -52,12 +56,13 @@ export function renderLock(app, onUnlocked, mode = 'password') {
 }
 
 // After opening with the recovery code the old password is forgotten, so a new one is required.
-function renderResetPassword(app, recoveryCode, onDone) {
+export function renderResetPassword(app, recoveryCode, onDone, warning = '') {
   document.body.classList.remove('dark');
   app.innerHTML = `
     <div class="setup">
       <h1 tabindex="-1">בחירת סיסמה חדשה</h1>
       <p class="step-text">הכספת נפתחה עם קוד השחזור. בחר סיסמת הצפנה חדשה. קוד השחזור הנוכחי ממשיך לעבוד.</p>
+      ${warning ? `<p class="note note-warn">${icon('alert')}<span>${warning}</span></p>` : ''}
       <div class="card card-pad">
         <form novalidate>
           ${newPasswordFields()}
