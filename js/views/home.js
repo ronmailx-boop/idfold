@@ -2,9 +2,12 @@ import * as store from '../store.js';
 import { icon } from '../ui/icons.js';
 import { esc, countLabel, toast } from '../ui/util.js';
 import { createFolderFlow } from '../ui/folder-sheets.js';
+import { docCard, addDocFlow } from '../ui/docs.js';
+
+// Kept while the app is open, so coming back from a document keeps the results.
+let query = '';
 
 export function renderHome(app) {
-  const folders = store.folderList();
   app.innerHTML = `
     <header class="top">
       <div class="top-text">
@@ -18,9 +21,41 @@ export function renderHome(app) {
     <label class="search">
       ${icon('search')}
       <span class="sr-only">חיפוש מסמכים</span>
-      <input type="search" placeholder="חיפוש לפי שם או הערה" disabled>
+      <input type="search" placeholder="חיפוש לפי שם או הערה" enterkeyhint="search" autocomplete="off" value="${esc(query)}">
     </label>
+    <p class="sr-only" role="status" id="search-status"></p>
 
+    <div id="home-body"></div>
+
+    <div class="bottom-bar">
+      <button type="button" class="btn btn-primary btn-lg" id="add-doc">${icon('plus')}הוסף מסמך</button>
+    </div>`;
+
+  const body = app.querySelector('#home-body');
+  const search = app.querySelector('.search input');
+  search.addEventListener('input', () => {
+    query = search.value;
+    renderBody(body);
+  });
+  app.querySelector('#add-doc').onclick = () => addDocFlow(null);
+  renderBody(body);
+}
+
+function renderBody(body) {
+  const status = document.getElementById('search-status');
+  if (query.trim()) {
+    const results = store.searchDocs(query);
+    const summary = !results.length ? 'לא נמצאו מסמכים'
+      : results.length === 1 ? 'נמצא מסמך אחד' : `נמצאו ${results.length} מסמכים`;
+    status.textContent = summary;
+    body.innerHTML = `
+      <h2 class="section-title">${summary}</h2>
+      ${results.length ? `<ul class="doc-list">${results.map((d) => docCard(d, { showFolder: true })).join('')}</ul>` : ''}`;
+    return;
+  }
+  status.textContent = '';
+  const folders = store.folderList();
+  body.innerHTML = `
     <h2 class="section-title">התיקיות שלי</h2>
     <ul class="grid" id="folder-grid">
       ${folders.map((f) => `
@@ -38,15 +73,9 @@ export function renderHome(app) {
         </button>
       </li>
     </ul>
-    <p class="hint">לחיצה ארוכה על תיקייה וגרירה משנות את הסדר</p>
-
-    <div class="bottom-bar">
-      <button type="button" class="btn btn-primary btn-lg" id="add-doc">${icon('plus')}הוסף מסמך</button>
-    </div>`;
-
-  app.querySelector('#new-folder').onclick = createFolderFlow;
-  app.querySelector('#add-doc').onclick = () => toast('הוספת מסמכים תגיע בשלב 3');
-  enableReorder(app.querySelector('#folder-grid'));
+    <p class="hint">לחיצה ארוכה על תיקייה וגרירה משנות את הסדר</p>`;
+  body.querySelector('#new-folder').onclick = createFolderFlow;
+  enableReorder(body.querySelector('#folder-grid'));
 }
 
 // Long-press a folder card, then drag it to a new place in the grid.

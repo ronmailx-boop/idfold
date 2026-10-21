@@ -6,6 +6,7 @@ import { renderLock } from './views/lock.js';
 import { renderHome } from './views/home.js';
 import { renderFolder } from './views/folder.js';
 import { renderSettings } from './views/settings.js';
+import { renderDoc } from './views/doc.js';
 
 const app = document.getElementById('app');
 const themeColor = document.querySelector('meta[name=theme-color]');
@@ -15,11 +16,17 @@ function setDark(dark) {
   themeColor.content = dark ? '#2b1d63' : '#f6f4ff';
 }
 
+// The current screen may return { cleanup, refresh }: cleanup runs before the next render,
+// refresh replaces a full re-render when data changes (the viewer keeps its decrypted file).
+let screen = null;
+
 function render(route) {
+  screen?.cleanup?.();
   app.className = '';
-  if (route.name === 'folder') renderFolder(app, route.param);
-  else if (route.name === 'settings') renderSettings(app);
-  else renderHome(app);
+  if (route.name === 'folder') screen = renderFolder(app, route.param);
+  else if (route.name === 'doc') screen = renderDoc(app, route.param);
+  else if (route.name === 'settings') screen = renderSettings(app);
+  else screen = renderHome(app);
 }
 
 let firstRoute = true;
@@ -87,7 +94,11 @@ async function main() {
   }
   // Ask the browser not to evict the vault under storage pressure.
   navigator.storage?.persist?.().catch(() => {});
-  store.onChange(() => { if (vault.isOpen()) render(currentRoute()); });
+  store.onChange(() => {
+    if (!vault.isOpen()) return;
+    if (screen?.refresh) screen.refresh();
+    else render(currentRoute());
+  });
 
   if (vault.exists()) {
     setDark(true);

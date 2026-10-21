@@ -1,5 +1,5 @@
 // Offline support: precache the app shell, serve it cache-first.
-const CACHE_VERSION = '0.2.0'; // keep in sync with js/version.js
+const CACHE_VERSION = '0.3.0'; // keep in sync with js/version.js
 const CACHE = `idfold-${CACHE_VERSION}`;
 const FONT_CACHE = 'idfold-fonts';
 
@@ -27,6 +27,12 @@ const SHELL = [
   './js/views/home.js',
   './js/views/folder.js',
   './js/views/settings.js',
+  './js/views/doc.js',
+  './js/ui/docs.js',
+  './js/files.js',
+  './js/pdf.js',
+  './vendor/pdfjs/pdf.min.mjs',
+  './vendor/pdfjs/pdf.worker.min.mjs',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',

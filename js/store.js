@@ -1,7 +1,7 @@
 // Data layer: keeps decrypted items in memory and persists them encrypted.
 // Records on disk are { id, data: { iv, ct } }; only the random id is stored in the clear.
 import * as db from './db.js';
-import { encryptJson, decryptJson } from './crypto.js';
+import { encryptJson, decryptJson, encryptBytes, decryptBytes } from './crypto.js';
 import { getKey } from './vault.js';
 
 const codec = {
@@ -19,6 +19,7 @@ const DEFAULT_FOLDERS = [
 ];
 
 export const NAME_MAX = 40;
+export const NOTE_MAX = 300;
 
 const folders = new Map();
 const docs = new Map();
@@ -58,8 +59,12 @@ export async function init() {
   }
 }
 
-// Trims, removes control characters and collapses whitespace.
-export function cleanText(value, max = NAME_MAX) {
+// Trims, removes control characters and collapses whitespace (keeps line breaks if multiline).
+export function cleanText(value, max = NAME_MAX, multiline = false) {
+  if (multiline) {
+    return String(value ?? '').split(/\r?\n/).map((line) => cleanText(line, max)).join('\n')
+      .replace(/\n{3,}/g, '\n\n').trim().slice(0, max);
+  }
   return String(value ?? '')
     .replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -122,6 +127,77 @@ export async function deleteFolder(id) {
     .map((d) => ({ ...d, folderId: other.id }));
   if (moved.length) await save('docs', docs, moved);
   await save('folders', folders, [{ id, deleted: true }]);
+}
+
+// ---------- Documents ----------
+// A document is { id, folderId, name, note, expiry ('YYYY-MM-DD' or ''), mime, size, thumb (data URL or ''), createdAt }.
+// Its file is a separate encrypted record in 'blobs' with the same id.
+
+const EXPIRY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function cleanDocFields(patch) {
+  const out = {};
+  if ('name' in patch) out.name = cleanText(patch.name) || 'מסמך';
+  if ('note' in patch) out.note = cleanText(patch.note, NOTE_MAX, true);
+  if ('expiry' in patch) out.expiry = EXPIRY_RE.test(patch.expiry || '') ? patch.expiry : '';
+  if ('folderId' in patch && getFolder(patch.folderId)) out.folderId = patch.folderId;
+  return out;
+}
+
+export function getDoc(id) {
+  const d = docs.get(id);
+  return d && !d.deleted ? d : null;
+}
+
+// Newest first.
+export function docList(folderId) {
+  return [...docs.values()]
+    .filter((d) => !d.deleted && (!folderId || d.folderId === folderId))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+const fold = (s) => s.toLowerCase().replace(/[֑-ׇ]/g, '');
+
+// Every word of the query must appear in the name or the note.
+export function searchDocs(query) {
+  const words = fold(query).split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  return docList().filter((d) => {
+    const text = fold(`${d.name} ${d.note}`);
+    return words.every((w) => text.includes(w));
+  });
+}
+
+export async function addDoc({ folderId, name, note, expiry, mime, thumb }, bytes) {
+  const doc = {
+    id: crypto.randomUUID(), folderId: null, name: '', note: '', expiry: '',
+    mime, size: bytes.byteLength, thumb: thumb || '', createdAt: Date.now(),
+    ...cleanDocFields({ folderId, name, note, expiry })
+  };
+  if (!doc.folderId) throw new Error('unknown folder');
+  // File first: a document record never points at a missing file.
+  await db.put('blobs', { id: doc.id, data: await encryptBytes(getKey(), bytes, `blobs:${doc.id}`) });
+  await save('docs', docs, [doc]);
+  return doc;
+}
+
+export async function updateDoc(id, patch) {
+  const d = getDoc(id);
+  if (!d) return;
+  await save('docs', docs, [{ ...d, ...cleanDocFields(patch) }]);
+}
+
+export async function deleteDoc(id) {
+  if (!getDoc(id)) return;
+  await save('docs', docs, [{ id, deleted: true }]);
+  await db.del('blobs', id);
+}
+
+// Decrypts a document's file. Returns an ArrayBuffer.
+export async function readFile(id) {
+  const rec = await db.get('blobs', id);
+  if (!rec) throw new Error('file missing');
+  return decryptBytes(getKey(), rec.data, `blobs:${id}`);
 }
 
 // Forgets all decrypted data (on lock).

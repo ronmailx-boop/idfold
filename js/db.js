@@ -62,6 +62,10 @@ export async function put(store, record) {
   return putMany(store, [record]);
 }
 
+export async function del(store, id) {
+  return done((await tx(store, 'readwrite')).delete(id));
+}
+
 export async function clear(store) {
   return done((await tx(store, 'readwrite')).clear());
 }
