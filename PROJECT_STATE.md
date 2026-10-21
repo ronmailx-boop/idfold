@@ -1,7 +1,7 @@
 # PROJECT_STATE — IDfold
 
 ## Current Focus
-שלב 5 הושלם ומוזג ל-main (גרסה 0.5.0). חסר עדיין: Client ID אמיתי ב-`js/config.js` (המשתמש יוצר לפי ה-README ושולח בצ'אט). ממתין לאישור לפני שלב 6 (PIN/WebAuthn PRF, נעילה אוטומטית, ליטוש PWA).
+שלב 5 הושלם ומוזג ל-main. Client ID אמיתי הוכנס ל-`js/config.js` (גרסה 0.5.1; פרויקט Google Cloud בשם IDfold, External במצב Testing, משתמשי בדיקה: vplusstudio.app@gmail.com, ronmailx@gmail.com; origins: https://ronmailx-boop.github.io ו-https://idfold.vplusstudio.app). הבא: בדיקה אמיתית מול Google בטלפון, ופריסה ל-Cloudflare בכתובת idfold.vplusstudio.app (הכתובת הרשמית). ממתין לאישור לפני שלב 6 (PIN/WebAuthn PRF, נעילה אוטומטית, ליטוש PWA).
 
 ## החלטות
 - אחרי כל שלב: commit לענף העבודה ומיזוג ל-`main` (בקשת המשתמש: "תמיד אתה תמזג ל-main").
