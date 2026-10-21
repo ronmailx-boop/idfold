@@ -62,15 +62,13 @@ async function wrapDek(rawDek, secret, slot) {
   };
 }
 
-// Returns the raw DEK bytes. The caller must wipe them (fill(0)) when done.
-async function unwrapRawDek(header, slot, secret) {
-  const wrap = header?.wraps?.[slot];
-  const kdf = wrap?.kdf;
-  if (header?.v !== HEADER_VERSION || kdf?.name !== 'PBKDF2' || kdf.hash !== 'SHA-256' ||
-      !Number.isInteger(kdf.iterations) || kdf.iterations < MIN_ITERATIONS) {
+function checkKdf(kdf) {
+  if (kdf?.name !== 'PBKDF2' || kdf.hash !== 'SHA-256' || !Number.isInteger(kdf.iterations) || kdf.iterations < MIN_ITERATIONS) {
     throw new Error('unsupported vault header');
   }
-  const kek = await deriveKek(secret, fromB64(kdf.salt), kdf.iterations);
+}
+
+async function decryptWrap(kek, wrap, slot) {
   try {
     const raw = await subtle.decrypt({ name: 'AES-GCM', iv: fromB64(wrap.iv), additionalData: slotAad(slot) }, kek, fromB64(wrap.ct));
     return new Uint8Array(raw);
@@ -78,6 +76,14 @@ async function unwrapRawDek(header, slot, secret) {
     // GCM tag mismatch: wrong secret. Nothing else is revealed.
     throw new WrongSecretError();
   }
+}
+
+// Returns the raw DEK bytes. The caller must wipe them (fill(0)) when done.
+async function unwrapRawDek(header, slot, secret) {
+  const wrap = header?.wraps?.[slot];
+  if (header?.v !== HEADER_VERSION) throw new Error('unsupported vault header');
+  checkKdf(wrap?.kdf);
+  return decryptWrap(await deriveKek(secret, fromB64(wrap.kdf.salt), wrap.kdf.iterations), wrap, slot);
 }
 
 function importDek(raw) {
@@ -121,6 +127,64 @@ export async function rewrapVault(header, auth, changes) {
     if (changes.password) wraps.password = await wrapDek(raw, changes.password, 'password');
     if (changes.recoveryCode) wraps.recovery = await wrapDek(raw, normalizeRecoveryCode(changes.recoveryCode), 'recovery');
     return { ...header, wraps };
+  } finally {
+    raw.fill(0);
+  }
+}
+
+// ---------- Quick unlock (local only, never synced) ----------
+// The same DEK, wrapped once more on this device: by a PIN (PBKDF2, like the password) or by
+// a key from the device's fingerprint/face unlock (WebAuthn PRF output through HKDF).
+// Creating either needs the password, since the DEK in memory can't be exported.
+
+export async function wrapWithPin(header, password, pin) {
+  const raw = await unwrapRawDek(header, 'password', password);
+  try {
+    return await wrapDek(raw, pin, 'pin');
+  } finally {
+    raw.fill(0);
+  }
+}
+
+// Throws WrongSecretError on a wrong PIN.
+export async function openWithPin(wrap, pin) {
+  checkKdf(wrap?.kdf);
+  const raw = await decryptWrap(await deriveKek(pin, fromB64(wrap.kdf.salt), wrap.kdf.iterations), wrap, 'pin');
+  try {
+    return await importDek(raw);
+  } finally {
+    raw.fill(0);
+  }
+}
+
+// prfOutput: the 32 bytes the authenticator returns for this app's salt.
+async function prfKek(prfOutput, salt) {
+  const base = await subtle.importKey('raw', prfOutput, 'HKDF', false, ['deriveKey']);
+  return subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt, info: enc.encode(`idfold/v${HEADER_VERSION}/prf`) },
+    base,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+export async function wrapWithPrf(header, password, prfOutput) {
+  const raw = await unwrapRawDek(header, 'password', password);
+  try {
+    const salt = randomBytes(SALT_BYTES);
+    const iv = randomBytes(IV_BYTES);
+    const ct = await subtle.encrypt({ name: 'AES-GCM', iv, additionalData: slotAad('prf') }, await prfKek(prfOutput, salt), raw);
+    return { kdf: { name: 'HKDF', hash: 'SHA-256', salt: toB64(salt) }, iv: toB64(iv), ct: toB64(ct) };
+  } finally {
+    raw.fill(0);
+  }
+}
+
+export async function openWithPrf(wrap, prfOutput) {
+  const raw = await decryptWrap(await prfKek(prfOutput, fromB64(wrap.kdf.salt)), wrap, 'prf');
+  try {
+    return await importDek(raw);
   } finally {
     raw.fill(0);
   }

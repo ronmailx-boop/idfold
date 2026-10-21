@@ -6,7 +6,7 @@ import * as google from '../google.js';
 import { WrongSecretError, isRecoveryCodeShape } from '../crypto.js';
 import { icon } from '../ui/icons.js';
 import { esc } from '../ui/util.js';
-import { passwordInput, bindToggles, showError, busy } from '../ui/password.js';
+import { passwordInput, usernameField, bindToggles, showError, busy } from '../ui/password.js';
 import { renderResetPassword } from './lock.js';
 
 export function renderRestore(app, { onDone, onBack }) {
@@ -55,7 +55,7 @@ function renderOpenBackup(app, found, { onDone, onBack }, mode = 'password') {
                 <label for="recovery-code">קוד שחזור</label>
                 <input class="input code-input" id="recovery-code" name="secret" dir="ltr" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
               </div>`
-            : passwordInput({ name: 'secret', label: 'סיסמת הצפנה' })}
+            : usernameField() + passwordInput({ name: 'secret', label: 'סיסמת הצפנה' })}
           <p class="field-error" role="alert" hidden></p>
           <p class="restore-progress" role="status" hidden></p>
           <button type="submit" class="btn btn-lg btn-primary">שחזר</button>

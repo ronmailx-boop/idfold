@@ -1,10 +1,14 @@
 import * as store from './store.js';
 import * as vault from './vault.js';
 import * as sync from './sync.js';
+import * as quick from './quick.js';
+import * as autolock from './autolock.js';
+import * as google from './google.js';
+import './install.js';
 import { start, currentRoute } from './router.js';
 import { renderSetup } from './views/setup.js';
 import { renderLock } from './views/lock.js';
-import { renderHome } from './views/home.js';
+import { renderHome, resetHome } from './views/home.js';
 import { renderFolder } from './views/folder.js';
 import { renderSettings } from './views/settings.js';
 import { renderDoc } from './views/doc.js';
@@ -49,6 +53,7 @@ async function enterApp() {
   await sync.init();
   sync.resume();
   entered = true;
+  await autolock.start(lockNow);
   if (routerStarted) onRoute(currentRoute());
   else {
     routerStarted = true;
@@ -59,6 +64,30 @@ async function enterApp() {
 function showFatal(title, text) {
   setDark(false);
   app.innerHTML = `<div class="fatal"><h1>${title}</h1><p>${text}</p></div>`;
+}
+
+// Locks now: forgets the key, every decrypted item and the Google token, and shows the lock screen.
+function lockNow() {
+  if (!vault.isOpen()) return;
+  autolock.stop();
+  document.querySelectorAll('dialog').forEach((d) => d.close());
+  screen?.cleanup?.();
+  screen = null;
+  entered = false;
+  sync.suspend();
+  google.dropToken();
+  store.clearMemory();
+  resetHome();
+  vault.lock();
+  // A new version waited for the lock (reloading while open would drop the key).
+  if (updateReady) return location.reload();
+  showLock();
+}
+
+async function showLock() {
+  setDark(true);
+  await quick.load().catch(() => {});
+  renderLock(app, afterUnlock);
 }
 
 async function afterUnlock() {
@@ -79,12 +108,15 @@ function watchConnection() {
   update();
 }
 
+let updateReady = false;
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    // Reloading would drop the unlocked key; only reload while locked.
-    if (hadController && !vault.isOpen()) location.reload();
+    if (!hadController) return;
+    // Reloading would drop the unlocked key; only reload while locked, or at the next lock.
+    if (vault.isOpen()) updateReady = true;
+    else location.reload();
   });
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
@@ -109,8 +141,7 @@ async function main() {
   sync.onNotice(() => toast('סיסמת ההצפנה שונתה במכשיר אחר. מעכשיו פותחים עם הסיסמה החדשה.'));
 
   if (vault.exists()) {
-    setDark(true);
-    renderLock(app, afterUnlock);
+    await showLock();
   } else {
     setDark(false);
     renderSetup(app, afterUnlock);

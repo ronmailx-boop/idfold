@@ -3,7 +3,7 @@ import * as vault from '../vault.js';
 import * as google from '../google.js';
 import { generateRecoveryCode } from '../crypto.js';
 import { icon } from '../ui/icons.js';
-import { newPasswordFields, bindNewPassword, bindToggles } from '../ui/password.js';
+import { newPasswordFields, bindNewPassword, bindToggles, usernameField } from '../ui/password.js';
 import { recoverySteps, NO_RECOVERY_WARNING } from '../ui/recovery.js';
 import { renderRestore } from './restore.js';
 
@@ -15,6 +15,7 @@ export function renderSetup(app, onCreated) {
       <p class="step-text">המסמכים מוצפנים במכשיר שלך לפני שהם נשמרים או מגובים. רק מי שיודע את סיסמת ההצפנה יכול לפתוח אותם.</p>
       <div class="card card-pad" id="setup-step">
         <form novalidate>
+          ${usernameField()}
           ${newPasswordFields()}
           <p class="field-error" role="alert" hidden></p>
           <p class="note note-warn">${icon('alert')}<span>${NO_RECOVERY_WARNING}</span></p>

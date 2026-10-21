@@ -3,16 +3,17 @@ import * as vault from '../vault.js';
 import { back } from '../router.js';
 import { icon } from '../ui/icons.js';
 import { toast } from '../ui/util.js';
-import { confirmSheet, openSheet } from '../ui/sheet.js';
-import { passwordInput, newPasswordFields, bindNewPassword, bindToggles, showError, busy } from '../ui/password.js';
+import { confirmSheet, openSheet, menuSheet } from '../ui/sheet.js';
+import { passwordInput, usernameField, newPasswordFields, bindNewPassword, bindToggles, showError, busy } from '../ui/password.js';
 import { recoverySteps } from '../ui/recovery.js';
 import { WrongSecretError, generateRecoveryCode } from '../crypto.js';
 import { APP_VERSION } from '../version.js';
 import * as sync from '../sync.js';
 import * as google from '../google.js';
 import { paintChip, formatWhen } from '../ui/sync.js';
-
-const soon = (stage) => `<span class="soon">שלב ${stage}</span>`;
+import * as quick from '../quick.js';
+import * as autolock from '../autolock.js';
+import { installMode, install } from '../install.js';
 
 export function renderSettings(app) {
   app.innerHTML = `
@@ -45,14 +46,23 @@ export function renderSettings(app) {
           <span class="row-icon">${icon('refresh')}</span>
           <span class="row-text">הפקת קוד שחזור חדש<small>הקוד הקודם יפסיק לעבוד</small></span>
         </button>
-        <div class="row is-disabled">
+        <div class="row">
           <span class="row-icon">${icon('fingerprint')}</span>
-          <span class="row-text" id="bio-label">פתיחה עם טביעת אצבע</span>${soon(6)}
-          <button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="bio-label" disabled></button>
+          <span class="row-text" id="bio-label">פתיחה עם טביעת אצבע<small data-bio-sub>או זיהוי פנים, לפי המכשיר</small></span>
+          <button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="bio-label" data-bio></button>
         </div>
-        <button type="button" class="row" disabled>
+        <div class="row">
+          <span class="row-icon">${icon('lock')}</span>
+          <span class="row-text" id="pin-label">פתיחה עם קוד PIN<small>${quick.PIN_MIN} ספרות או יותר, רק במכשיר הזה</small></span>
+          <button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="pin-label" data-pin></button>
+        </div>
+        <button type="button" class="row" id="autolock">
           <span class="row-icon">${icon('timer')}</span>
-          <span class="row-text">נעילה אוטומטית<small>אחרי 5 דקות ברקע</small></span>${soon(6)}
+          <span class="row-text">נעילה אוטומטית<small data-autolock-sub></small></span>
+        </button>
+        <button type="button" class="row" id="lock-now">
+          <span class="row-icon">${icon('lock')}</span>
+          <span class="row-text">נעל עכשיו</span>
         </button>
       </div>
     </section>
@@ -60,6 +70,10 @@ export function renderSettings(app) {
     <section class="group" aria-labelledby="g-data">
       <h2 class="group-title" id="g-data">נתונים</h2>
       <div class="card">
+        <button type="button" class="row" id="install" hidden>
+          <span class="row-icon">${icon('plus')}</span>
+          <span class="row-text">התקנה במסך הבית<small>נפתחת כמו אפליקציה רגילה, גם בלי אינטרנט</small></span>
+        </button>
         <button type="button" class="row" id="google-logout">
           <span class="row-icon">${icon('logout')}</span>
           <span class="row-text">התנתקות מ-Google<small>הגיבוי ב-Drive נשאר מוצפן</small></span>
@@ -78,6 +92,8 @@ export function renderSettings(app) {
   const stopSync = bindSync(app);
   app.querySelector('#change-password').onclick = changePasswordSheet;
   app.querySelector('#new-code').onclick = newRecoveryCodeSheet;
+  bindQuick(app);
+  bindInstall(app);
   app.querySelector('#wipe').onclick = async () => {
     const ok = await confirmSheet({
       title: 'למחוק את כל הנתונים?',
@@ -94,6 +110,192 @@ export function renderSettings(app) {
     }
   };
   return { cleanup: stopSync };
+}
+
+// ---------- Quick unlock, auto-lock, lock now ----------
+
+const BIO_MESSAGES = {
+  unsupported: 'המכשיר או הדפדפן הזה לא תומכים בפתיחה עם טביעת אצבע לאפליקציות אינטרנט. אפשר להשתמש בקוד PIN.',
+  cancelled: 'האישור בוטל. נסה שוב.',
+  failed: 'ההפעלה לא הצליחה. נסה שוב.'
+};
+
+function bindQuick(app) {
+  const $ = (sel) => app.querySelector(sel);
+  const bio = $('[data-bio]');
+  const pin = $('[data-pin]');
+  const autoSub = $('[data-autolock-sub]');
+
+  function paint() {
+    bio.setAttribute('aria-checked', String(quick.hasBio()));
+    pin.setAttribute('aria-checked', String(quick.hasPin()));
+    autoSub.textContent = autolock.label();
+  }
+  quick.bioAvailable().then((ok) => {
+    if (ok || quick.hasBio()) return;
+    bio.disabled = true;
+    bio.closest('.row').classList.add('is-disabled');
+    $('[data-bio-sub]').textContent = 'לא נתמך במכשיר או בדפדפן הזה';
+  });
+
+  bio.onclick = async () => {
+    if (!quick.hasBio()) return enableBioSheet(paint);
+    await quick.disableBio();
+    paint();
+    toast('הפתיחה עם טביעת אצבע בוטלה');
+  };
+  pin.onclick = async () => {
+    if (!quick.hasPin()) return enablePinSheet(paint);
+    await quick.disablePin();
+    paint();
+    toast('הפתיחה עם PIN בוטלה');
+  };
+  $('#autolock').onclick = () => menuSheet({
+    title: 'נעילה אוטומטית',
+    iconFn: icon,
+    items: autolock.CHOICES.map((m) => ({
+      icon: 'timer',
+      label: autolock.label(m),
+      note: m === autolock.getMinutes() ? 'הבחירה הנוכחית' : '',
+      onSelect: async () => {
+        await autolock.setMinutes(m).catch(() => toast('השמירה נכשלה. נסה שוב.'));
+        paint();
+      }
+    }))
+  });
+  $('#lock-now').onclick = () => autolock.lockNow();
+  paint();
+}
+
+// First step of turning on a quick unlock: the password proves who is asking.
+function passwordStep(d, intro, onOk) {
+  const step = d.querySelector('[data-step]');
+  step.innerHTML = `<form novalidate>
+      <p class="sheet-msg">${intro}</p>
+      ${usernameField()}
+      ${passwordInput({ name: 'current', label: 'סיסמת הצפנה' })}
+      <p class="field-error" role="alert" hidden></p>
+      <div class="sheet-actions">
+        <button type="submit" class="btn btn-lg btn-primary">המשך</button>
+        <button type="button" class="btn btn-lg btn-secondary" data-cancel>ביטול</button>
+      </div>
+    </form>`;
+  const form = step.querySelector('form');
+  const error = form.querySelector('.field-error');
+  const current = form.elements.current;
+  bindToggles(form);
+  form.querySelector('[data-cancel]').onclick = () => d.close();
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    if (!current.value) return showError(error, 'יש להזין את הסיסמה.', current);
+    const password = current.value;
+    const ok = await withCurrentPassword(form.querySelector('[type=submit]'), 'בודק…', error, current,
+      () => vault.verifyPassword(password));
+    if (ok) onOk(password);
+  };
+  current.focus();
+}
+
+function enablePinSheet(onDone) {
+  const d = openSheet({ title: 'פתיחה עם קוד PIN', body: '<div data-step></div>' });
+  passwordStep(d, 'קוד PIN פותח את הכספת במכשיר הזה בלבד. הוא לא מחליף את סיסמת ההצפנה, ופעם בשבועיים נבקש גם אותה. כדי להמשיך הזן את סיסמת ההצפנה.', (password) => {
+    const step = d.querySelector('[data-step]');
+    step.innerHTML = `<form novalidate>
+        <p class="sheet-msg">בחר קוד של ${quick.PIN_MIN} עד ${quick.PIN_MAX} ספרות. אחרי ${quick.MAX_PIN_FAILS} ניסיונות שגויים הפתיחה עם PIN תבוטל.</p>
+        <div class="field">
+          <label for="new-pin">קוד PIN חדש</label>
+          <input class="input pin-input" id="new-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="${quick.PIN_MAX}" autocomplete="off" dir="ltr">
+        </div>
+        <div class="field">
+          <label for="confirm-pin">הקלד שוב את הקוד</label>
+          <input class="input pin-input" id="confirm-pin" name="confirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="${quick.PIN_MAX}" autocomplete="off" dir="ltr">
+        </div>
+        <p class="field-error" role="alert" hidden></p>
+        <div class="sheet-actions">
+          <button type="submit" class="btn btn-lg btn-primary">הפעל</button>
+          <button type="button" class="btn btn-lg btn-secondary" data-cancel>ביטול</button>
+        </div>
+      </form>`;
+    const form = step.querySelector('form');
+    const error = form.querySelector('.field-error');
+    const { pin, confirm } = form.elements;
+    form.querySelector('[data-cancel]').onclick = () => d.close();
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      if (!quick.isPinShape(pin.value)) return showError(error, `הקוד צריך להכיל ${quick.PIN_MIN} עד ${quick.PIN_MAX} ספרות.`, pin);
+      if (/^(\d)\1+$/.test(pin.value) || '01234567890123'.includes(pin.value) || '98765432109876'.includes(pin.value)) {
+        return showError(error, 'הקוד קל מדי לניחוש. בחר ספרות פחות צפויות.', pin);
+      }
+      if (confirm.value !== pin.value) return showError(error, 'הקודים אינם זהים.', confirm);
+      showError(error, '');
+      try {
+        await busy(form.querySelector('[type=submit]'), 'שומר…', () => quick.enablePin(password, pin.value));
+      } catch {
+        return showError(error, 'השמירה נכשלה. נסה שוב.');
+      }
+      d.close();
+      onDone();
+      toast('הפתיחה עם PIN הופעלה');
+    };
+    pin.focus();
+  });
+}
+
+function enableBioSheet(onDone) {
+  const d = openSheet({ title: 'פתיחה עם טביעת אצבע', body: '<div data-step></div>' });
+  passwordStep(d, 'טביעת האצבע או זיהוי הפנים פותחים את הכספת במכשיר הזה בלבד. פעם בשבועיים נבקש גם את סיסמת ההצפנה. כדי להמשיך הזן את סיסמת ההצפנה.', (password) => {
+    const step = d.querySelector('[data-step]');
+    // Each fingerprint prompt gets its own tap (some browsers allow it only inside a tap).
+    const tapStep = (text, label, work) => {
+      step.innerHTML = `<p class="sheet-msg">${text}</p>
+        <p class="field-error" role="alert" hidden></p>
+        <div class="sheet-actions">
+          <button type="button" class="btn btn-lg btn-primary" data-go>${icon('fingerprint')}${label}</button>
+          <button type="button" class="btn btn-lg btn-secondary" data-cancel>ביטול</button>
+        </div>`;
+      const error = step.querySelector('.field-error');
+      const go = step.querySelector('[data-go]');
+      step.querySelector('[data-cancel]').onclick = () => d.close();
+      go.onclick = async () => {
+        showError(error, '');
+        try {
+          await busy(go, 'ממתין לאישור…', work);
+        } catch (err) {
+          showError(error, BIO_MESSAGES[err.code] || BIO_MESSAGES.failed);
+        }
+      };
+      go.focus();
+    };
+    const finish = async (pending, out) => {
+      await quick.saveBio(password, pending, out);
+      d.close();
+      onDone();
+      toast('הפתיחה עם טביעת אצבע הופעלה');
+    };
+    tapStep('עכשיו אשר עם טביעת האצבע או זיהוי הפנים של המכשיר.', 'אשר עם טביעת אצבע', async () => {
+      const pending = await quick.createBio();
+      if (pending.out) return finish(pending, pending.out);
+      tapStep('עוד אישור אחד, כדי לקבל את מפתח הפתיחה מהמכשיר.', 'אשר שוב', async () => finish(pending, await quick.readBio(pending)));
+    });
+  });
+}
+
+function bindInstall(app) {
+  const row = app.querySelector('#install');
+  const mode = installMode();
+  if (!mode) return;
+  row.hidden = false;
+  row.onclick = async () => {
+    if (mode === 'ios') {
+      confirmSheet({
+        title: 'התקנה במסך הבית',
+        message: 'בספארי: לחץ על כפתור השיתוף (ריבוע עם חץ למעלה), ואז על "הוספה למסך הבית".',
+        confirmLabel: 'הבנתי'
+      });
+      return;
+    }
+    if (await install()) row.hidden = true;
+  };
 }
 
 // The Drive card and the sign-out row follow the backup status live.
@@ -166,6 +368,7 @@ function changePasswordSheet() {
     title: 'שינוי סיסמת הצפנה',
     body: `<form novalidate>
       <p class="sheet-msg">רק המפתח נעטף מחדש. הקבצים לא מוצפנים מחדש וקוד השחזור לא משתנה.</p>
+      ${usernameField()}
       ${passwordInput({ name: 'current', label: 'הסיסמה הנוכחית' })}
       ${newPasswordFields()}
       <p class="field-error" role="alert" hidden></p>
@@ -201,6 +404,7 @@ function newRecoveryCodeSheet() {
     title: 'הפקת קוד שחזור חדש',
     body: `<div data-step><form novalidate>
       <p class="sheet-msg">אחרי השמירה הקוד הקודם יפסיק לעבוד. כדי להמשיך הזן את סיסמת ההצפנה.</p>
+      ${usernameField()}
       ${passwordInput({ name: 'current', label: 'סיסמת הצפנה' })}
       <p class="field-error" role="alert" hidden></p>
       <div class="sheet-actions">

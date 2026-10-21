@@ -1,7 +1,7 @@
 # PROJECT_STATE — IDfold
 
 ## Current Focus
-שלב 5 הושלם ומוזג ל-main. Client ID אמיתי הוכנס ל-`js/config.js` (גרסה 0.5.1; פרויקט Google Cloud בשם IDfold, External במצב Testing, משתמשי בדיקה: vplusstudio.app@gmail.com, ronmailx@gmail.com; origins: https://ronmailx-boop.github.io ו-https://idfold.vplusstudio.app). פריסה ל-Cloudflare Workers (worker בשם idfold, דומיין idfold.vplusstudio.app, גרסה 0.5.2) פעילה: הפריסה הראשונה הצליחה (21.10.2026), עם idfold.ronmailx.workers.dev ו-idfold.vplusstudio.app (custom domain). הבא: בדיקה אמיתית מול Google בטלפון בכתובת הרשמית. ממתין לאישור לפני שלב 6 (PIN/WebAuthn PRF, נעילה אוטומטית, ליטוש PWA).
+שלב 6 הושלם ומוזג ל-main (גרסה 0.6.0) — כל 6 השלבים גמורים. האתר: https://idfold.vplusstudio.app (Cloudflare, נפרס אוטומטית מ-main; גם github.io פעיל). באתר האפליקציות (ריפו my-site) האריח של IDfold פותח את idfold.vplusstudio.app. Google OAuth: פרויקט IDfold, External במצב Testing, משתמשי בדיקה vplusstudio.app@gmail.com ו-ronmailx@gmail.com, origins לשתי הכתובות. הבא: בדיקה אמיתית בטלפון (התחברות ל-Google, סנכרון, טביעת אצבע); לא נבדק עדיין מול Google אמיתי ומול חיישן אמיתי. אפשרויות להמשך: Publish app ב-Google Auth Platform כשרוצים משתמשים מעבר למשתמשי הבדיקה, מסמכים משפטיים ב-docs/legal.
 
 ## החלטות
 - אירוח: הכתובת הרשמית https://idfold.vplusstudio.app (Cloudflare Workers static assets, workers_dev נשאר פעיל). GitHub Pages נשאר במקביל. ה-SW שומר במטמון עותק לא-מופנה (`unredirect`) כי Cloudflare מפנה index.html ל-`/`.
@@ -13,7 +13,6 @@
 - קוד שחזור: 24 תווים ב-Crockford base32 (120 ביט), בקבוצות של 4. אחרי פתיחה עם קוד שחזור חובה לבחור סיסמה חדשה.
 - סיסמה: מינימום 10 תווים וחוזק לפחות "בינונית" (`js/strength.js`).
 - בדיקות: `npm test` (Node, `tests/crypto.test.mjs`). בדיקת e2e עם Playwright רצה מה-scratchpad ולא נשמרה בריפו.
-- בשלב 6: לנעילה מהירה (PIN/WebAuthn) צריך להוסיף slot שלישי ל-wraps (מקומי בלבד, לא לסנכרן).
 - מחיקה משאירה tombstone (`{ id, deleted: true, updatedAt }`) לטובת הסנכרון בשלב 5.
 - ניווט מבוסס hash (`#/`, `#/folder/<id>`, `#/settings`), עם מחסנית פנימית לכפתור "חזרה".
 - bottom sheets מבוססים על `<dialog>`.
@@ -33,7 +32,6 @@
 - מצב החיבור נשמר מוצפן ב-`meta/sync` (AAD `meta:sync`): `{ email, rootId, filesId, dataId, pending, lastBackup }`.
 - אם ב-Drive יש `idfold-data.enc` שלא נפתח במפתח הנוכחי (כספת אחרת) — לא דורסים, החיבור מבוטל עם הודעה.
 - שגיאות Drive: 401 → auth, 404 → חיפוש תיקיות מחדש, 429/5xx/rateLimit → backoff עד 4 ניסיונות, storageQuota → quota, שגיאת רשת → offline.
-- בשלב 6: ה-header שעולה ל-Drive (`vault.getHeader()`) חייב לסנן את ה-slot המקומי של PIN/WebAuthn.
 - CSP: נוספו `accounts.google.com/gsi/*` ו-`www.googleapis.com`. בדיקת e2e לשלב 4: `e2e4.mjs` ב-scratchpad, עם Drive מדומה.
 
 - שלב 5 — סדר כל ריצת סנכרון (`syncWith`): תיקיות ← pull (רק אם `version` של קובץ הנתונים ב-Drive השתנה מ-`state.dataVersion`) ← מיזוג כותרת ונתונים ← הורדת קבצים חסרים מקומית ← העלאת קבצים חסרים ב-Drive ← בדיקת version שוב ומיזוג אם השתנה (מניעת דריסה בין מכשירים) ← העלאת קובץ הנתונים רק אם המכשיר "מקדים" ← מחיקת קבצים מיותרים (רק אם עדיין לא חיים אחרי המיזוג המאוחר).
@@ -45,10 +43,15 @@
 - שחזור (`views/restore.js`): `sync.findBackup` (לחיצה) ← `vault.unlockBackup` ← `sync.restore`: ייבוא הנתונים, שמירת מצב, ורק בסוף `adoptHeader` (שחזור שנקטע מתחיל מחדש). קבצים שלא ירדו יורדים בסנכרון הבא. `vault.create` מוחק גם את `meta/sync`.
 - בדיקת e2e לשלב 5: `e2e5.mjs` ב-scratchpad (4 מכשירים מול Drive מדומה עם `version`).
 
+- שלב 6, פתיחה מהירה: במקום slot שלישי בכותרת (שהיה מחייב סינון לפני העלאה), העטיפות המקומיות ברשומה נפרדת `meta/quick` (גלויה, כמו הכותרת): `{ pin?: { wrap, fails }, bio?: { credId, evalSalt, wrap }, passwordAt }`. AAD של עטיפה: `idfold/v1/dek/pin` / `idfold/v1/dek/prf`. PIN: PBKDF2 600k, 6–12 ספרות, חוסם רצפים/ספרה חוזרת, 5 ניסיונות (נספר לפני הניסיון) ואז העטיפה נמחקת. PRF: passkey מקומי (platform, UV required, rpId = hostname), salt קבוע לכל credential, HKDF-SHA256 → AES-GCM. הפעלה דורשת סיסמה (ה-DEK בזיכרון לא ניתן לייצוא). כל בקשת טביעת אצבע בלחיצה נפרדת (Safari). `vault.create` ו-`sync.restore` מוחקים את `meta/quick`. כל 14 יום נדרשת סיסמה מלאה.
+- שלב 6, נעילה: `autolock.js` סופר זמן מאז אינטראקציה אחרונה (pointerdown/keydown/wheel/touchmove), בודק כל 15 שניות ובחזרה מהרקע. בחירה 1/5/15/60 דקות (ברירת מחדל 5) מוצפנת ב-`meta/prefs` (AAD `meta:prefs`). `lockNow` ב-app.js: סוגר dialogs, cleanup למסך, `sync.suspend()`, `google.dropToken()`, `store.clearMemory()`, איפוס חיפוש, `vault.lock()`. עדכון SW שהגיע כשהכספת פתוחה נטען בנעילה הבאה. ברקע `body.away` מסתיר את התוכן.
+- שלב 6, מנהל סיסמאות: שדה `username` נסתר עם הערך IDfold בכל טופס סיסמה (`usernameField()`), ולא בטפסי PIN.
+- בדיקת e2e לשלב 6 (scratchpad `e2e6.mjs`): Virtual Authenticator עם PRF דרך CDP, `page.clock` לנעילה אוטומטית — 32 בדיקות עוברות.
+
 ## שלבים
 - [x] 1. שלד PWA + IndexedDB + תיקיות עם עריכה מלאה (הוספה, שם, אייקון/צבע, מחיקה, גרירה)
 - [x] 2. מודול הצפנה: סיסמה, קוד שחזור, DEK עטוף פעמיים, מסך נעילה, שינוי סיסמה, בדיקות (מחיקת נתוני שלב 1 הלא-מוצפנים)
 - [x] 3. הוספת קבצים מהבורר, שמירה מוצפנת, צפייה (zoom, pdf.js), שיתוף, חיפוש
 - [x] 4. התחברות Google (drive.file), תיקיית IDfold וגיבוי חד-כיווני + הוראות הקמה ל-Google Cloud
 - [x] 5. סנכרון דו-כיווני ומיזוג, שחזור במכשיר חדש, offline queue, חיווי סטטוס
-- [ ] 6. נעילה מהירה (PIN + WebAuthn PRF), נעילה אוטומטית, ליטוש PWA
+- [x] 6. נעילה מהירה (PIN + WebAuthn PRF), נעילה אוטומטית, ליטוש PWA (שם משתמש נסתר, התקנה במסך הבית, עדכון בנעילה, הסתרה ברקע)

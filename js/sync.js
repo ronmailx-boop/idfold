@@ -353,11 +353,20 @@ export async function restore(found) {
   } catch {
     throw new SyncError('corrupt');
   }
+  await db.del('meta', 'quick');
   await store.importSnapshot(snapshot);
   state = { email: found.email, rootId: found.rootId, filesId: null, dataId: found.dataId, dataVersion: null, pending: false, lastBackup: 0 };
   await saveState();
   await vault.adoptHeader(found.header);
   return backup();
+}
+
+// On lock: stops syncing until the next unlock (init() reads the saved state again).
+export function suspend() {
+  clearTimeout(timer);
+  state = null;
+  again = false;
+  status = { phase: 'off', error: null, done: 0, total: 0 };
 }
 
 async function forget() {

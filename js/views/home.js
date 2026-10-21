@@ -9,6 +9,11 @@ import { paintChip } from '../ui/sync.js';
 // Kept while the app is open, so coming back from a document keeps the results.
 let query = '';
 
+// On lock: the search text may name documents.
+export function resetHome() {
+  query = '';
+}
+
 export function renderHome(app) {
   app.innerHTML = `
     <header class="top">

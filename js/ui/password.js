@@ -4,6 +4,10 @@ import { passwordStrength, MIN_PASSWORD_LENGTH, MIN_SCORE } from '../strength.js
 
 let uid = 0;
 
+// The vault has no user name, but password managers want one to save the password under.
+// A fixed hidden one keeps them from asking "add a user name".
+export const usernameField = () => '<input type="text" name="username" autocomplete="username" value="IDfold" hidden>';
+
 export function passwordInput({ name, label, autocomplete = 'current-password', dark = false }) {
   const id = `pw-${++uid}`;
   return `<div class="field${dark ? ' field-dark' : ''}">

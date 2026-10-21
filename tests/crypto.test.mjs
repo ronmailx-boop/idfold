@@ -127,3 +127,32 @@ test('password strength', () => {
   assert.ok(passwordStrength('גשם בתל אביב 2026').score >= 3);
   assert.ok(passwordStrength('Tr0ub4dor&3xyz').score >= 3);
 });
+
+test('PIN wrap opens the same data key and rejects a wrong PIN', async () => {
+  const { header, key } = await vaultPromise;
+  const wrap = await c.wrapWithPin(header, PASSWORD, '482913');
+  assert.ok(wrap.kdf.iterations >= 600000);
+  assert.ok(!JSON.stringify(wrap).includes('482913'));
+  const k = await c.openWithPin(wrap, '482913');
+  const box = await c.encryptJson(key, { a: 1 }, 'x');
+  assert.deepEqual(await c.decryptJson(k, box, 'x'), { a: 1 });
+  await assert.rejects(c.openWithPin(wrap, '482914'), c.WrongSecretError);
+  await assert.rejects(c.wrapWithPin(header, 'wrong password', '482913'), c.WrongSecretError);
+});
+
+test('PRF wrap opens the data key only with the same authenticator output', async () => {
+  const { header, key } = await vaultPromise;
+  const prf = c.randomBytes(32);
+  const wrap = await c.wrapWithPrf(header, PASSWORD, prf);
+  const k = await c.openWithPrf(wrap, prf);
+  const box = await c.encryptJson(key, 'ok', 'y');
+  assert.equal(await c.decryptJson(k, box, 'y'), 'ok');
+  await assert.rejects(c.openWithPrf(wrap, c.randomBytes(32)), c.WrongSecretError);
+});
+
+test('a quick-unlock wrap cannot be used in another slot', async () => {
+  const { header } = await vaultPromise;
+  const wrap = await c.wrapWithPin(header, PASSWORD, '111111');
+  const moved = { ...header, wraps: { ...header.wraps, password: wrap } };
+  await assert.rejects(c.openVault(moved, 'password', '111111'), c.WrongSecretError);
+});

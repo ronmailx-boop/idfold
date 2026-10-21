@@ -228,7 +228,6 @@ a { color: var(--primary-ink); }
 .switch[aria-checked="true"] { background: var(--primary); }
 .switch[aria-checked="true"]::after { inset-inline-start: 23px; }
 
-.soon { font-size: 12px; font-weight: 500; color: var(--text-2); background: var(--off-bg); border-radius: 999px; padding: 2px 8px; flex: none; }
 .app-version { text-align: center; color: var(--text-2); font-size: 13px; }
 
 /* ---------- Bottom sheet ---------- */
@@ -330,7 +329,10 @@ body.dark { background: var(--lock-bg); color: var(--lock-text); }
 .lock .logo { border-radius: 22px; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); margin-bottom: 20px; }
 .lock h1 { font-size: 32px; font-weight: 700; color: #fff; }
 .lock-sub { color: var(--lock-text); margin: 4px 0 32px; }
-.lock form { width: 100%; max-width: 400px; display: grid; gap: 12px; text-align: start; }
+.lock-form { width: 100%; max-width: 400px; display: grid; gap: 12px; text-align: start; }
+.lock-note { color: var(--lock-text); font-size: 14px; }
+.lock .link-btn + .link-btn { margin-top: 4px; }
+.pin-input { font-size: 22px; letter-spacing: .3em; text-align: center; }
 .field-dark { margin-bottom: 4px; }
 .field-dark > label { color: var(--lock-text); }
 .field-dark .input { background: rgba(255, 255, 255, .08); border-color: rgba(217, 208, 255, .45); color: #fff; }
@@ -345,6 +347,8 @@ body.dark { background: var(--lock-bg); color: var(--lock-text); }
   background: none; border: 0; color: #fff; text-decoration: underline; text-underline-offset: 3px;
 }
 body.dark :focus-visible { outline-color: #fff; }
+/* In the background the vault is hidden, so the app switcher's preview shows nothing. */
+body.away #app, body.away dialog { visibility: hidden; }
 
 /* ---------- Document cards ---------- */
 .doc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }

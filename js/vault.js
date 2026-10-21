@@ -58,6 +58,7 @@ export async function create(password, recoveryCode) {
   // Drop anything stored before encryption existed (stage 1 data was not encrypted).
   for (const store of ['folders', 'docs', 'blobs']) await db.clear(store);
   await db.del('meta', 'sync');
+  await db.del('meta', 'quick');
   const vault = await c.createVault(password, recoveryCode);
   await saveHeader(vault.header, vault.key);
   key = vault.key;
@@ -76,6 +77,11 @@ export async function unlockBackup(backupHeader, slot, secret) {
 // Throws c.WrongSecretError if the password is wrong.
 export async function verifyPassword(password) {
   await c.openVault(header, 'password', password);
+}
+
+// Quick unlock (js/quick.js) opened the key from its local wrap.
+export function openWith(k) {
+  key = k;
 }
 
 export function lock() {
