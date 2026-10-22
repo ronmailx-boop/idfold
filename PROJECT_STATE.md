@@ -1,7 +1,7 @@
 # PROJECT_STATE — IDfold
 
 ## Current Focus
-שלב 6 הושלם ומוזג ל-main (גרסה 0.6.0) — כל 6 השלבים גמורים. האתר: https://idfold.vplusstudio.app (Cloudflare, נפרס אוטומטית מ-main; גם github.io פעיל). באתר האפליקציות (ריפו my-site) האריח של IDfold פותח את idfold.vplusstudio.app. Google OAuth: פרויקט IDfold, External במצב Testing, משתמשי בדיקה vplusstudio.app@gmail.com ו-ronmailx@gmail.com, origins לשתי הכתובות. הבא: בדיקה אמיתית בטלפון (התחברות ל-Google, סנכרון, טביעת אצבע); לא נבדק עדיין מול Google אמיתי ומול חיישן אמיתי. אפשרויות להמשך: Publish app ב-Google Auth Platform כשרוצים משתמשים מעבר למשתמשי הבדיקה, מסמכים משפטיים ב-docs/legal.
+שלב 6 הושלם ומוזג ל-main; גרסה 0.6.1 הוסיפה כפתור "הורד למכשיר" ליד השיתוף — כל 6 השלבים גמורים. האתר: https://idfold.vplusstudio.app (Cloudflare, נפרס אוטומטית מ-main; גם github.io פעיל). באתר האפליקציות (ריפו my-site) האריח של IDfold פותח את idfold.vplusstudio.app. Google OAuth: פרויקט IDfold, External במצב Testing, משתמשי בדיקה vplusstudio.app@gmail.com ו-ronmailx@gmail.com, origins לשתי הכתובות. הבא: בדיקה אמיתית בטלפון (התחברות ל-Google, סנכרון, טביעת אצבע); לא נבדק עדיין מול Google אמיתי ומול חיישן אמיתי. אפשרויות להמשך: Publish app ב-Google Auth Platform כשרוצים משתמשים מעבר למשתמשי הבדיקה, מסמכים משפטיים ב-docs/legal.
 
 ## החלטות
 - אירוח: הכתובת הרשמית https://idfold.vplusstudio.app (Cloudflare Workers static assets, workers_dev נשאר פעיל). GitHub Pages נשאר במקביל. ה-SW שומר במטמון עותק לא-מופנה (`unredirect`) כי Cloudflare מפנה index.html ל-`/`.
@@ -24,6 +24,7 @@
 - pdf.js 4.10.38 (legacy build) נמצא ב-`vendor/pdfjs/` ונטען רק כשצריך, עם `isEvalSupported: false`. אין צורך לשנות את ה-CSP.
 - מסך יכול להחזיר `{ cleanup, refresh }`. במסך הצפייה `refresh` רק מעדכן את הכותרת, ו-`cleanup` מבטל את ה-Blob URL ומשחרר את הקובץ המפוענח.
 - שיתוף: ה-File מוכן מראש, ו-`navigator.share` נקרא ישירות מהלחיצה על "שתף בכל זאת".
+- הורדה (0.6.1): באותו חלון אזהרה יש גם "הורד למכשיר" (blob URL + `<a download>`, ה-URL משוחרר אחרי דקה). כשאין תמיכה בשיתוף קבצים נשאר רק כפתור ההורדה. חלון השיתוף של אנדרואיד שייך למערכת ואי אפשר להוסיף אליו כפתורים. בדיקת e2e: `e2e7.mjs` ב-scratchpad (להריץ עם `LANG=C.UTF-8`, אחרת Chromium נותן לשם עברי `download`).
 - בדיקת e2e לשלב 3: `e2e3.mjs` ב-scratchpad (לא בריפו).
 
 - שלב 4: GIS token client (`js/google.js`), הטוקן בזיכרון בלבד. בקשת טוקן רק מלחיצה (חלון Google). בלי טוקן הגיבוי האוטומטי עובר ל"ממתין" עם בקשה ללחוץ "סנכרן עכשיו".

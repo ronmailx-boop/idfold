@@ -231,24 +231,39 @@ export function shareFile(bytes, doc) {
 
 // file is ready in advance: navigator.share must run straight from the tap.
 export function shareFlow(file, title) {
-  if (!navigator.canShare?.({ files: [file] })) {
-    toast('הדפדפן הזה לא תומך בשיתוף קבצים.');
-    return;
-  }
+  const canShare = !!navigator.canShare?.({ files: [file] });
   const d = openSheet({
-    title: 'שיתוף המסמך',
-    body: `<p class="note note-warn">${icon('alert')}<span><strong>העותק המשותף אינו מוצפן.</strong> כל מי שיקבל אותו יוכל לפתוח אותו, והוא עלול להישמר באפליקציה שאליה תשתף.</span></p>
+    title: canShare ? 'שיתוף או הורדה' : 'הורדת המסמך',
+    body: `<p class="note note-warn">${icon('alert')}<span><strong>העותק ${canShare ? 'ששולחים או מורידים' : 'שיורד למכשיר'} אינו מוצפן.</strong> כל מי שיקבל אותו יוכל לפתוח אותו, והוא עלול להישמר באפליקציה שאליה תשתף. בהורדה הוא נשמר גלוי בתיקיית ההורדות.</span></p>
       <div class="sheet-actions">
-        <button type="button" class="btn btn-lg btn-primary" data-ok>${icon('share')}שתף בכל זאת</button>
+        ${canShare ? `<button type="button" class="btn btn-lg btn-primary" data-ok>${icon('share')}שתף בכל זאת</button>` : ''}
+        <button type="button" class="btn btn-lg ${canShare ? 'btn-secondary' : 'btn-primary'}" data-download>${icon('download')}הורד למכשיר</button>
         <button type="button" class="btn btn-lg btn-secondary" data-cancel>ביטול</button>
       </div>`
   });
   d.querySelector('[data-cancel]').onclick = () => d.close();
   d.querySelector('[data-cancel]').focus();
-  d.querySelector('[data-ok]').onclick = () => {
+  d.querySelector('[data-download]').onclick = () => {
+    d.close();
+    download(file);
+  };
+  if (canShare) d.querySelector('[data-ok]').onclick = () => {
     d.close();
     navigator.share({ files: [file], title }).catch((err) => {
       if (err.name !== 'AbortError') toast('השיתוף נכשל.');
     });
   };
+}
+
+function download(file) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  // The browser reads the blob after the click returns.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  toast('הקובץ ירד לתיקיית ההורדות');
 }

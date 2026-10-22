@@ -139,7 +139,7 @@ export function renderDoc(app, id) {
       if (isPdf(doc.mime)) await showPdf();
       else await showImage(doc.mime);
     } catch {
-      if (!closed) showMessage('לא ניתן להציג את הקובץ במכשיר הזה. אפשר עדיין לשתף אותו.');
+      if (!closed) showMessage('לא ניתן להציג את הקובץ במכשיר הזה. אפשר עדיין לשתף או להוריד אותו.');
     }
   })();
 
