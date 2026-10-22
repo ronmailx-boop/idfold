@@ -1,7 +1,7 @@
 # PROJECT_STATE — IDfold
 
 ## Current Focus
-שלב 6 הושלם ומוזג ל-main; גרסה 0.6.1 הוסיפה כפתור "הורד למכשיר" ליד השיתוף, ו-0.6.2 הסירה את `#/` מכתובת מסך הבית — כל 6 השלבים גמורים. האתר: https://idfold.vplusstudio.app (Cloudflare, נפרס אוטומטית מ-main; גם github.io פעיל). באתר האפליקציות (ריפו my-site) האריח של IDfold פותח את idfold.vplusstudio.app. Google OAuth: פרויקט IDfold, External במצב Testing, משתמשי בדיקה vplusstudio.app@gmail.com ו-ronmailx@gmail.com, origins לשתי הכתובות. נבדק בטלפון אמיתי (22.10.2026): חיבור ל-Google Drive, הורדה למכשיר, כתובת נקייה. הבא: בדיקת טביעת אצבע / PIN בטלפון (לא נבדקה עדיין מול חיישן אמיתי). אפשרויות להמשך: Publish app ב-Google Auth Platform כשרוצים משתמשים מעבר למשתמשי הבדיקה, מסמכים משפטיים ב-docs/legal.
+שלב 6 הושלם ומוזג ל-main; גרסה 0.6.1 הוסיפה כפתור "הורד למכשיר" ליד השיתוף, ו-0.6.2 הסירה את `#/` מכתובת מסך הבית — כל 6 השלבים גמורים. האתר: https://idfold.vplusstudio.app (Cloudflare, נפרס אוטומטית מ-main; גם github.io פעיל). באתר האפליקציות (ריפו my-site) האריח של IDfold פותח את idfold.vplusstudio.app. Google OAuth: פרויקט IDfold, External במצב Testing, משתמשי בדיקה vplusstudio.app@gmail.com ו-ronmailx@gmail.com, origins לשתי הכתובות. נבדק בטלפון אמיתי (22.10.2026): חיבור ל-Google Drive, הורדה למכשיר, כתובת נקייה. גם טביעת אצבע (WebAuthn PRF) נבדקה ועובדת בטלפון — כל התכונות נבדקו במכשיר אמיתי. אפשרויות להמשך: Publish app ב-Google Auth Platform כשרוצים משתמשים מעבר למשתמשי הבדיקה, מסמכים משפטיים ב-docs/legal.
 
 ## החלטות
 - אירוח: הכתובת הרשמית https://idfold.vplusstudio.app (Cloudflare Workers static assets, workers_dev נשאר פעיל). GitHub Pages נשאר במקביל. ה-SW שומר במטמון עותק לא-מופנה (`unredirect`) כי Cloudflare מפנה index.html ל-`/`.
