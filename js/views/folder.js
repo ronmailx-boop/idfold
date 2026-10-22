@@ -5,6 +5,7 @@ import { esc, countLabel } from '../ui/util.js';
 import { menuSheet } from '../ui/sheet.js';
 import { editFolderFlow, deleteFolderFlow } from '../ui/folder-sheets.js';
 import { docCard, addDocFlow } from '../ui/docs.js';
+import { tabBar, bindTabBar } from '../ui/tabbar.js';
 
 const backButton = `<button type="button" class="icon-btn" data-back aria-label="חזרה">${icon('back')}</button>`;
 
@@ -38,12 +39,11 @@ export function renderFolder(app, id) {
       <button type="button" class="btn btn-secondary" data-add>${icon('plus')}הוסף מסמך</button>
     </div>`}
 
-    <div class="bottom-bar">
-      <button type="button" class="btn btn-primary btn-lg" data-add>${icon('plus')}הוסף לתיקייה</button>
-    </div>`;
+    ${tabBar()}`;
 
   app.querySelector('[data-back]').onclick = back;
   app.querySelectorAll('[data-add]').forEach((b) => { b.onclick = () => addDocFlow(folder.id); });
+  bindTabBar(app, { onAdd: () => addDocFlow(folder.id) });
   app.querySelector('#folder-menu').onclick = () => menuSheet({
     title: folder.name,
     iconFn: icon,

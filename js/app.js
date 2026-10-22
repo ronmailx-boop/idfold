@@ -16,11 +16,9 @@ import { renderDoc } from './views/doc.js';
 import { toast } from './ui/util.js';
 
 const app = document.getElementById('app');
-const themeColor = document.querySelector('meta[name=theme-color]');
-
+// The lock screen (dark class) uses its own layout; the colours are the same everywhere.
 function setDark(dark) {
   document.body.classList.toggle('dark', dark);
-  themeColor.content = dark ? '#2b1d63' : '#f6f4ff';
 }
 
 // The current screen may return { cleanup, refresh }: cleanup runs before the next render,

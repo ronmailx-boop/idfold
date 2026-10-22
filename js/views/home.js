@@ -6,6 +6,10 @@ import { docCard, addDocFlow } from '../ui/docs.js';
 import * as sync from '../sync.js';
 import { paintChip } from '../ui/sync.js';
 import { openGuide } from '../ui/guide.js';
+import { openMenu } from '../ui/menu.js';
+import { tabBar, bindTabBar, takeSearchFocus } from '../ui/tabbar.js';
+
+const RECENT = 3;
 
 // Kept while the app is open, so coming back from a document keeps the results.
 let query = '';
@@ -24,7 +28,7 @@ export function renderHome(app) {
       </div>
       <a class="chip" href="#/settings" data-sync aria-describedby="sync-label"></a>
       <span class="sr-only" id="sync-label">מצב הגיבוי. מעבר להגדרות</span>
-      <a class="icon-btn" href="#/settings" aria-label="הגדרות">${icon('settings')}</a>
+      <button type="button" class="icon-btn" id="open-menu" aria-label="תפריט">${icon('menu')}</button>
     </header>
 
     <label class="search">
@@ -36,9 +40,7 @@ export function renderHome(app) {
 
     <div id="home-body"></div>
 
-    <div class="bottom-bar">
-      <button type="button" class="btn btn-primary btn-lg" id="add-doc">${icon('plus')}הוסף מסמך</button>
-    </div>`;
+    ${tabBar({ home: true })}`;
 
   const body = app.querySelector('#home-body');
   const search = app.querySelector('.search input');
@@ -46,11 +48,18 @@ export function renderHome(app) {
     query = search.value;
     renderBody(body);
   });
-  app.querySelector('#add-doc').onclick = () => addDocFlow(null);
+  const menuBtn = app.querySelector('#open-menu');
+  menuBtn.onclick = () => openMenu(menuBtn);
+  bindTabBar(app, {
+    onAdd: () => addDocFlow(null),
+    onSearch: () => { search.scrollIntoView({ block: 'center' }); search.focus(); }
+  });
   const chip = app.querySelector('[data-sync]');
   paintChip(chip, sync.getStatus());
   const stop = sync.onStatus((st) => paintChip(chip, st));
   renderBody(body);
+  // After the router has moved focus to the heading.
+  if (takeSearchFocus()) requestAnimationFrame(() => search.focus());
   return { cleanup: stop };
 }
 
@@ -68,6 +77,7 @@ function renderBody(body) {
   }
   status.textContent = '';
   const folders = store.folderList();
+  const recent = store.docList().slice(0, RECENT);
   body.innerHTML = `
     <h2 class="section-title">התיקיות שלי</h2>
     <ul class="grid" id="folder-grid">
@@ -87,6 +97,11 @@ function renderBody(body) {
       </li>
     </ul>
     <p class="hint">לחיצה ארוכה על תיקייה וגרירה משנות את הסדר</p>
+    ${recent.length ? `
+    <section class="recent" aria-labelledby="recent-title">
+      <h2 class="section-title" id="recent-title">נוספו לאחרונה</h2>
+      <ul class="doc-list">${recent.map((d) => docCard(d, { showFolder: true })).join('')}</ul>
+    </section>` : ''}
     <p class="guide-link"><button type="button" id="open-guide">מדריך שימוש</button></p>`;
   body.querySelector('#new-folder').onclick = createFolderFlow;
   body.querySelector('#open-guide').onclick = openGuide;

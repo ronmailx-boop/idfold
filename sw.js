@@ -1,13 +1,21 @@
 // Offline support: precache the app shell, serve it cache-first.
-const CACHE_VERSION = '0.7.1'; // keep in sync with js/version.js
+const CACHE_VERSION = '0.8.0'; // keep in sync with js/version.js
 const CACHE = `idfold-${CACHE_VERSION}`;
-const FONT_CACHE = 'idfold-fonts';
 
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/app.css',
+  './css/fonts.css',
+  './vendor/fonts/frank-ruhl-libre-hebrew-700-normal.woff2',
+  './vendor/fonts/frank-ruhl-libre-latin-700-normal.woff2',
+  './vendor/fonts/ibm-plex-sans-hebrew-hebrew-400-normal.woff2',
+  './vendor/fonts/ibm-plex-sans-hebrew-hebrew-500-normal.woff2',
+  './vendor/fonts/ibm-plex-sans-hebrew-hebrew-600-normal.woff2',
+  './vendor/fonts/ibm-plex-sans-hebrew-latin-400-normal.woff2',
+  './vendor/fonts/ibm-plex-sans-hebrew-latin-500-normal.woff2',
+  './vendor/fonts/ibm-plex-sans-hebrew-latin-600-normal.woff2',
   './js/app.js',
   './js/db.js',
   './js/router.js',
@@ -26,6 +34,8 @@ const SHELL = [
   './js/views/lock.js',
   './js/ui/icons.js',
   './js/ui/sheet.js',
+  './js/ui/tabbar.js',
+  './js/ui/menu.js',
   './js/ui/guide.js',
   './js/ui/util.js',
   './js/ui/folder-sheets.js',
@@ -89,7 +99,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== FONT_CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -98,19 +108,6 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-
-  // Google Fonts: serve from cache, refresh in the background.
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    event.respondWith(caches.open(FONT_CACHE).then(async (cache) => {
-      const cached = await cache.match(req);
-      const network = fetch(req).then((res) => {
-        if (res.ok || res.type === 'opaque') cache.put(req, res.clone());
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    }));
-    return;
-  }
 
   if (url.origin !== self.location.origin) return;
 

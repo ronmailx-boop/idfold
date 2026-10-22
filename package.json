@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "legal": "node tools/legal.mjs"
+    "legal": "node tools/legal.mjs",
+    "icons": "node tools/icons.mjs"
   }
 }
