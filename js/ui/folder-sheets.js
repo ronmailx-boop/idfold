@@ -2,7 +2,7 @@
 import * as store from '../store.js';
 import { openSheet, confirmSheet } from './sheet.js';
 import { icon, FOLDER_ICONS, FOLDER_COLORS } from './icons.js';
-import { esc, countLabel, toast } from './util.js';
+import { esc, countLabel, toast, selectAll } from './util.js';
 
 const ICON_KEYS = new Set(FOLDER_ICONS.map((i) => i.key));
 const COLOR_KEYS = new Set(FOLDER_COLORS.map((c) => c.key));
@@ -43,6 +43,7 @@ function folderForm({ title, submitLabel, folder }) {
     });
     const form = d.querySelector('form');
     const nameInput = form.elements.name;
+    if (folder) selectAll(nameInput);
     const error = d.querySelector('#folder-name-error');
     const iconSet = d.querySelector('.icon-set');
     let result = null;

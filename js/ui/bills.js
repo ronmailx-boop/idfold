@@ -2,7 +2,7 @@
 import * as store from '../store.js';
 import { openSheet, menuSheet } from './sheet.js';
 import { icon } from './icons.js';
-import { esc, toast } from './util.js';
+import { esc, toast, selectAll } from './util.js';
 import { busy, showError } from './password.js';
 import { addDocFlow, pickFiles, folderOptions, noteField } from './docs.js';
 import { prepareFile, fileMime, baseName, formatSize, MAX_FILE_BYTES } from '../files.js';
@@ -143,6 +143,7 @@ export function billFlow({ folderId = null, doc = null, prefill = null } = {}) {
   const form = d.querySelector('form');
   const f = form.elements;
   const error = form.querySelector('.field-error');
+  if (editing) selectAll(f.name);
   const found = form.querySelector('[data-found]');
   d.querySelector('[data-cancel]').onclick = () => d.close();
   form.addEventListener('input', () => { if (!error.hidden) showError(error, ''); });

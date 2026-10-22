@@ -17,3 +17,9 @@ export function toast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
+
+// Focuses a field with its whole text selected, so one tap on the keyboard's delete clears it.
+export function selectAll(input) {
+  input.focus();
+  input.select();
+}

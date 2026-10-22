@@ -2,7 +2,7 @@
 import * as store from '../store.js';
 import { openSheet, confirmSheet, menuSheet } from './sheet.js';
 import { icon } from './icons.js';
-import { esc, toast } from './util.js';
+import { esc, toast, selectAll } from './util.js';
 import { busy, showError } from './password.js';
 import { prepareFile, fileMime, baseName, formatSize, isPdf, MAX_FILE_BYTES } from '../files.js';
 import { dueInfo, formatAmount, hostOf } from './bills.js';
@@ -182,6 +182,7 @@ export function editDocFlow(doc) {
     </form>`
   });
   const form = d.querySelector('form');
+  selectAll(form.elements.name);
   d.querySelector('[data-cancel]').onclick = () => d.close();
   form.onsubmit = async (e) => {
     e.preventDefault();
