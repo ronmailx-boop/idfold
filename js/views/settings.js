@@ -103,7 +103,7 @@ export function renderSettings(app) {
       </div>
     </section>
 
-    <p class="app-version">IDfold · גרסה ${APP_VERSION} · V+ Studio</p>`;
+    <p class="app-version">IDfold · גרסה ${APP_VERSION} · vplus studio</p>`;
 
   app.classList.add('no-bar');
   app.querySelector('[data-back]').onclick = back;
