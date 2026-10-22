@@ -4,6 +4,7 @@ import { back } from '../router.js';
 import { icon } from '../ui/icons.js';
 import { esc } from '../ui/util.js';
 import { expiryInfo, editDocFlow, moveDocFlow, deleteDocFlow, shareFlow, shareFile } from '../ui/docs.js';
+import { billFlow } from '../ui/bills.js';
 import { isPdf } from '../files.js';
 import { openPdf, renderPage } from '../pdf.js';
 
@@ -54,7 +55,7 @@ export function renderDoc(app, id) {
     const doc = current();
     if (!doc) return;
     $('[data-title]').textContent = doc.name;
-    const exp = expiryInfo(doc.expiry);
+    const exp = store.isBill(doc) ? null : expiryInfo(doc.expiry);
     $('[data-sub]').textContent = [store.getFolder(doc.folderId)?.name, exp?.text].filter(Boolean).join(' · ');
     $('[data-note]').textContent = doc.note;
     $('[data-note]').hidden = !doc.note;
@@ -144,7 +145,10 @@ export function renderDoc(app, id) {
   })();
 
   $('[data-back]').onclick = back;
-  $('[data-edit]').onclick = () => current() && editDocFlow(current());
+  $('[data-edit]').onclick = () => {
+    const doc = current();
+    if (doc) store.isBill(doc) ? billFlow({ doc }) : editDocFlow(doc);
+  };
   $('[data-move]').onclick = () => current() && moveDocFlow(current());
   $('[data-delete]').onclick = async () => {
     if (current() && await deleteDocFlow(current())) back();

@@ -5,6 +5,7 @@ import { icon } from './icons.js';
 import { esc, toast } from './util.js';
 import { busy, showError } from './password.js';
 import { prepareFile, fileMime, baseName, formatSize, isPdf, MAX_FILE_BYTES } from '../files.js';
+import { dueInfo, formatAmount, hostOf } from './bills.js';
 
 // ---------- Cards ----------
 
@@ -27,18 +28,20 @@ export function expiryInfo(expiry) {
 const THUMB_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
 
 export function docCard(doc, { showFolder = false } = {}) {
-  const exp = expiryInfo(doc.expiry);
-  const kind = isPdf(doc.mime) ? 'PDF' : 'תמונה';
+  const bill = store.isBill(doc);
+  const exp = bill ? dueInfo(doc) : expiryInfo(doc.expiry);
+  const kind = bill ? 'תשלום' : isPdf(doc.mime) ? 'PDF' : 'תמונה';
   const where = showFolder ? store.getFolder(doc.folderId)?.name || '' : kind;
+  const detail = bill ? formatAmount(doc.amount) || hostOf(doc.url) : formatSize(doc.size);
   return `<li>
-    <a class="doc-card" href="#/doc/${encodeURIComponent(doc.id)}">
-      <span class="doc-thumb">
-        ${THUMB_RE.test(doc.thumb) ? `<img src="${doc.thumb}" alt="">` : icon('file')}
+    <a class="doc-card${bill && doc.paidAt ? ' is-paid' : ''}" href="#/doc/${encodeURIComponent(doc.id)}">
+      <span class="doc-thumb${bill ? ' is-bill' : ''}">
+        ${THUMB_RE.test(doc.thumb) ? `<img src="${doc.thumb}" alt="">` : icon(bill ? 'receipt' : 'file')}
         ${isPdf(doc.mime) ? '<span class="doc-type">PDF</span>' : ''}
       </span>
       <span class="doc-info">
         <span class="doc-name">${esc(doc.name)}</span>
-        <span class="doc-meta">${esc(where)} · <bdi dir="ltr">${formatSize(doc.size)}</bdi></span>
+        <span class="doc-meta">${esc(where)}${detail ? ` · <bdi dir="ltr">${esc(detail)}</bdi>` : ''}</span>
         ${doc.note ? `<span class="doc-note-line">${esc(doc.note)}</span>` : ''}
         ${exp ? `<span class="badge ${exp.cls}">${esc(exp.text)}</span>` : ''}
       </span>
@@ -48,14 +51,14 @@ export function docCard(doc, { showFolder = false } = {}) {
 
 // ---------- Add ----------
 
-function pickFiles() {
+export function pickFiles({ multiple = true } = {}) {
   return new Promise((resolve) => {
     document.getElementById('file-picker')?.remove();
     const input = document.createElement('input');
     input.type = 'file';
     input.id = 'file-picker';
     input.accept = 'application/pdf,image/*';
-    input.multiple = true;
+    input.multiple = multiple;
     input.hidden = true;
     input.addEventListener('change', () => { resolve([...input.files]); input.remove(); });
     input.addEventListener('cancel', () => { resolve([]); input.remove(); });
@@ -64,10 +67,10 @@ function pickFiles() {
   });
 }
 
-const folderOptions = (selected) => store.folderList()
+export const folderOptions = (selected) => store.folderList()
   .map((f) => `<option value="${esc(f.id)}"${f.id === selected ? ' selected' : ''}>${esc(f.name)}</option>`).join('');
 
-const noteField = (value = '') => `<label class="field">
+export const noteField = (value = '') => `<label class="field">
     <span>הערה (לא חובה)</span>
     <textarea class="input textarea" name="note" rows="2" maxlength="${store.NOTE_MAX}">${esc(value)}</textarea>
   </label>`;
@@ -201,7 +204,7 @@ export function moveDocFlow(doc) {
       note: f.id === doc.folderId ? 'התיקייה הנוכחית' : '',
       disabled: f.id === doc.folderId,
       onSelect: async () => {
-        if (await guard(() => store.updateDoc(doc.id, { folderId: f.id }))) toast(`המסמך הועבר ל"${f.name}"`);
+        if (await guard(() => store.updateDoc(doc.id, { folderId: f.id }))) toast(`${store.isBill(doc) ? 'התשלום' : 'המסמך'} הועבר ל"${f.name}"`);
       }
     }))
   });
@@ -209,14 +212,15 @@ export function moveDocFlow(doc) {
 
 // Resolves true if the document was deleted.
 export async function deleteDocFlow(doc) {
+  const bill = store.isBill(doc);
   const ok = await confirmSheet({
     title: `למחוק את "${doc.name}"?`,
-    message: 'המסמך יימחק מהכספת. אי אפשר לבטל את הפעולה.',
-    confirmLabel: 'מחק מסמך',
+    message: bill ? 'התשלום, ההודעה והקובץ שלו יימחקו מהכספת. אי אפשר לבטל את הפעולה.' : 'המסמך יימחק מהכספת. אי אפשר לבטל את הפעולה.',
+    confirmLabel: bill ? 'מחק תשלום' : 'מחק מסמך',
     danger: true
   });
   if (!ok || !(await guard(() => store.deleteDoc(doc.id)))) return false;
-  toast('המסמך נמחק');
+  toast(bill ? 'התשלום נמחק' : 'המסמך נמחק');
   return true;
 }
 

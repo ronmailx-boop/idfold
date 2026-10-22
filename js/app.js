@@ -13,9 +13,16 @@ import { renderHome, resetHome } from './views/home.js';
 import { renderFolder } from './views/folder.js';
 import { renderSettings } from './views/settings.js';
 import { renderDoc } from './views/doc.js';
+import { renderBill } from './views/bill.js';
 import { toast } from './ui/util.js';
+import { takeShared } from './share.js';
+import { billFlow } from './ui/bills.js';
 
 const app = document.getElementById('app');
+
+// Something shared from another app (WhatsApp, SMS, mail): opens as a new payment once the vault is open.
+let pendingShare = null;
+const shareTaken = takeShared().then((s) => { pendingShare = s; }).catch(() => {});
 // The lock screen (dark class) uses its own layout; the colours are the same everywhere.
 function setDark(dark) {
   document.body.classList.toggle('dark', dark);
@@ -29,7 +36,8 @@ function render(route) {
   screen?.cleanup?.();
   app.className = '';
   if (route.name === 'folder') screen = renderFolder(app, route.param);
-  else if (route.name === 'doc') screen = renderDoc(app, route.param);
+  else if (route.name === 'doc') screen = store.isBill(store.getDoc(route.param)) ? renderBill(app, route.param) : renderDoc(app, route.param);
+  else if (route.name === 'file') screen = renderDoc(app, route.param);
   else if (route.name === 'settings') screen = renderSettings(app);
   else screen = renderHome(app);
 }
@@ -58,7 +66,14 @@ async function enterApp() {
     routerStarted = true;
     start(onRoute);
   }
-  guide.showOnce().catch(() => {});
+  await shareTaken;
+  if (pendingShare) {
+    const prefill = pendingShare;
+    pendingShare = null;
+    billFlow({ prefill });
+  } else {
+    guide.showOnce().catch(() => {});
+  }
 }
 
 function showFatal(title, text) {
@@ -74,6 +89,7 @@ function lockNow() {
   screen?.cleanup?.();
   screen = null;
   entered = false;
+  pendingShare = null;
   sync.suspend();
   google.dropToken();
   store.clearMemory();
@@ -88,6 +104,11 @@ async function showLock() {
   setDark(true);
   await quick.load().catch(() => {});
   renderLock(app, afterUnlock);
+  await shareTaken;
+  if (pendingShare && !vault.isOpen()) {
+    app.querySelector('.lock-sub')?.insertAdjacentHTML('afterend',
+      '<p class="lock-share" role="status">התקבל תוכן לשמירה כתשלום. פתח את הכספת כדי לשמור אותו.</p>');
+  }
 }
 
 async function afterUnlock() {

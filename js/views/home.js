@@ -2,7 +2,8 @@ import * as store from '../store.js';
 import { icon } from '../ui/icons.js';
 import { esc, countLabel, toast } from '../ui/util.js';
 import { createFolderFlow } from '../ui/folder-sheets.js';
-import { docCard, addDocFlow } from '../ui/docs.js';
+import { docCard } from '../ui/docs.js';
+import { addChoice } from '../ui/bills.js';
 import * as sync from '../sync.js';
 import { paintChip } from '../ui/sync.js';
 import { openGuide } from '../ui/guide.js';
@@ -10,6 +11,7 @@ import { openMenu } from '../ui/menu.js';
 import { tabBar, bindTabBar, takeSearchFocus } from '../ui/tabbar.js';
 
 const RECENT = 3;
+const DUE_SHOWN = 5;
 
 // Kept while the app is open, so coming back from a document keeps the results.
 let query = '';
@@ -51,7 +53,7 @@ export function renderHome(app) {
   const menuBtn = app.querySelector('#open-menu');
   menuBtn.onclick = () => openMenu(menuBtn);
   bindTabBar(app, {
-    onAdd: () => addDocFlow(null),
+    onAdd: () => addChoice(null),
     onSearch: () => { search.scrollIntoView({ block: 'center' }); search.focus(); }
   });
   const chip = app.querySelector('[data-sync]');
@@ -78,7 +80,14 @@ function renderBody(body) {
   status.textContent = '';
   const folders = store.folderList();
   const recent = store.docList().slice(0, RECENT);
+  const due = store.unpaidBills();
   body.innerHTML = `
+    ${due.length ? `
+    <section class="due" aria-labelledby="due-title">
+      <h2 class="section-title" id="due-title">לתשלום (${due.length})</h2>
+      <ul class="doc-list">${due.slice(0, DUE_SHOWN).map((d) => docCard(d, { showFolder: true })).join('')}</ul>
+      ${due.length > DUE_SHOWN ? `<p class="hint">ועוד ${due.length - DUE_SHOWN} תשלומים פתוחים בתיקיות</p>` : ''}
+    </section>` : ''}
     <h2 class="section-title">התיקיות שלי</h2>
     <ul class="grid" id="folder-grid">
       ${folders.map((f) => `

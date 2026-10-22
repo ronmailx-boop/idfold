@@ -16,7 +16,7 @@ export function tabBar({ home = false } = {}) {
       <div class="tabbar-in">
         <a class="tab" href="#/"${home ? ' aria-current="page"' : ''}>${icon('home')}בית</a>
         <button type="button" class="tab" data-tab-search>${icon('search')}חיפוש</button>
-        <button type="button" class="tab-add" data-add aria-label="הוסף מסמך">${icon('plus')}</button>
+        <button type="button" class="tab-add" data-add aria-label="הוספת מסמך או תשלום">${icon('plus')}</button>
         <a class="tab" href="#/settings">${icon('cloud')}גיבוי</a>
         <button type="button" class="tab" data-tab-lock>${icon('lock')}נעילה</button>
       </div>

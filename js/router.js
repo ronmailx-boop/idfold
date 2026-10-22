@@ -1,4 +1,4 @@
-// Hash router: (home, no hash)  #/folder/<id>  #/doc/<id>  #/settings
+// Hash router: (home, no hash)  #/folder/<id>  #/doc/<id>  #/file/<id>  #/settings
 // Keeps an in-app stack so "back" follows real navigation history.
 const stack = [];
 let handler = null;

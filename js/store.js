@@ -20,6 +20,8 @@ const DEFAULT_FOLDERS = [
 
 export const NAME_MAX = 40;
 export const NOTE_MAX = 300;
+export const URL_MAX = 2000;
+export const MSG_MAX = 2000;
 
 const folders = new Map();
 const docs = new Map();
@@ -133,8 +135,29 @@ export async function deleteFolder(id) {
 // ---------- Documents ----------
 // A document is { id, folderId, name, note, expiry ('YYYY-MM-DD' or ''), mime, size, thumb (data URL or ''), createdAt }.
 // Its file is a separate encrypted record in 'blobs' with the same id.
+// A payment (kind 'bill') adds { url, msg, amount, paidAt }: expiry is its due date, and the file is
+// optional (mime '' and size 0 when there is none).
 
 const EXPIRY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Only https links are kept (no javascript:, data: and the like).
+export function cleanUrl(value) {
+  const text = String(value ?? '').trim();
+  if (!text || text.length > URL_MAX) return '';
+  try {
+    const u = new URL(text);
+    return u.protocol === 'https:' && u.hostname ? u.href : '';
+  } catch {
+    return '';
+  }
+}
+
+// "1,234.5" → "1234.50"; anything else → ''.
+export function cleanAmount(value) {
+  const text = String(value ?? '').replace(/[₪,\s]/g, '');
+  if (!/^\d{1,9}(\.\d{1,2})?$/.test(text)) return '';
+  return Number(text).toFixed(2);
+}
 
 function cleanDocFields(patch) {
   const out = {};
@@ -142,8 +165,15 @@ function cleanDocFields(patch) {
   if ('note' in patch) out.note = cleanText(patch.note, NOTE_MAX, true);
   if ('expiry' in patch) out.expiry = EXPIRY_RE.test(patch.expiry || '') ? patch.expiry : '';
   if ('folderId' in patch && getFolder(patch.folderId)) out.folderId = patch.folderId;
+  if ('url' in patch) out.url = cleanUrl(patch.url);
+  if ('msg' in patch) out.msg = cleanText(patch.msg, MSG_MAX, true);
+  if ('amount' in patch) out.amount = cleanAmount(patch.amount);
+  if ('paidAt' in patch) out.paidAt = Number.isFinite(patch.paidAt) && patch.paidAt > 0 ? patch.paidAt : 0;
   return out;
 }
+
+export const isBill = (doc) => doc?.kind === 'bill';
+export const hasFile = (doc) => !!doc?.mime;
 
 export function getDoc(id) {
   const d = docs.get(id);
@@ -159,12 +189,14 @@ export function docList(folderId) {
 
 const fold = (s) => s.toLowerCase().replace(/[֑-ׇ]/g, '');
 
-// Every word of the query must appear in the name or the note.
+const host = (url) => { try { return new URL(url).hostname; } catch { return ''; } };
+
+// Every word of the query must appear in the name, the note, or a payment's message or site.
 export function searchDocs(query) {
   const words = fold(query).split(/\s+/).filter(Boolean);
   if (!words.length) return [];
   return docList().filter((d) => {
-    const text = fold(`${d.name} ${d.note}`);
+    const text = fold(`${d.name} ${d.note} ${d.msg || ''} ${d.url ? host(d.url) : ''}`);
     return words.every((w) => text.includes(w));
   });
 }
@@ -180,6 +212,35 @@ export async function addDoc({ folderId, name, note, expiry, mime, thumb }, byte
   await db.put('blobs', { id: doc.id, data: await encryptBytes(getKey(), bytes, `blobs:${doc.id}`) });
   await save('docs', docs, [doc]);
   return doc;
+}
+
+// Unpaid payments: overdue and soonest first, those without a due date last.
+export function unpaidBills() {
+  return docList().filter((d) => isBill(d) && !d.paidAt)
+    .sort((a, b) => (a.expiry || '9999').localeCompare(b.expiry || '9999') || b.createdAt - a.createdAt);
+}
+
+// file is null or { bytes, mime, thumb }.
+export async function addBill({ folderId, name, note, expiry, url, msg, amount }, file) {
+  const doc = {
+    id: crypto.randomUUID(), kind: 'bill', folderId: null, name: '', note: '', expiry: '',
+    url: '', msg: '', amount: '', paidAt: 0,
+    mime: file?.mime || '', size: file?.bytes.byteLength || 0, thumb: file?.thumb || '', createdAt: Date.now(),
+    ...cleanDocFields({ folderId, name, note, expiry, url, msg, amount })
+  };
+  if (!doc.folderId) throw new Error('unknown folder');
+  if (file) await db.put('blobs', { id: doc.id, data: await encryptBytes(getKey(), file.bytes, `blobs:${doc.id}`) });
+  await save('docs', docs, [doc]);
+  return doc;
+}
+
+// Attaches a file to a payment that has none. (A replaced file would not reach the backup:
+// the sync uploads a file only when Drive has none under that id.)
+export async function attachFile(id, { bytes, mime, thumb }) {
+  const d = getDoc(id);
+  if (!d || hasFile(d)) return;
+  await db.put('blobs', { id, data: await encryptBytes(getKey(), bytes, `blobs:${id}`) });
+  await save('docs', docs, [{ ...d, mime, size: bytes.byteLength, thumb: thumb || '' }]);
 }
 
 export async function updateDoc(id, patch) {
@@ -221,7 +282,7 @@ function cleanRemote(kind, item) {
       id: item.id, name: cleanText(item.name), keep: item.keep === true
     };
   }
-  return {
+  const doc = {
     ...pick(item, ['folderId', 'mime', 'size', 'thumb', 'createdAt', 'updatedAt']),
     id: item.id,
     name: cleanText(item.name) || 'מסמך',
@@ -229,6 +290,10 @@ function cleanRemote(kind, item) {
     expiry: EXPIRY_RE.test(item.expiry || '') ? item.expiry : '',
     thumb: typeof item.thumb === 'string' && item.thumb.startsWith('data:image/jpeg;base64,') ? item.thumb : ''
   };
+  if (item.kind === 'bill') {
+    Object.assign(doc, { kind: 'bill', ...cleanDocFields({ url: item.url, msg: item.msg, amount: item.amount, paidAt: item.paidAt }) });
+  }
+  return doc;
 }
 
 // Merges another device's folders and documents: for each id the newest updatedAt wins, deletions

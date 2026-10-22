@@ -481,6 +481,25 @@ a { color: var(--primary-ink); }
 }
 .ga-remember .c1 { left: 78px; } .ga-remember .c2 { left: 126px; animation-delay: .3s; } .ga-remember .c3 { left: 174px; animation-delay: .6s; }
 @keyframes ga-code { 0% { transform: translateY(8px); opacity: 0; } 12%, 85% { transform: none; opacity: 1; } 95%, 100% { opacity: 0; } }
+/* Payments: tap "pay", then the bill is marked paid */
+.ga-bills .ga-bill {
+  left: 40px; top: 10px; width: 140px; height: 58px; padding: 10px 44px 0 10px; border-radius: 12px;
+  background: var(--card-2); border: 1.5px solid var(--card-border);
+}
+.ga-bill b { position: absolute; right: 8px; top: 8px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--tint); color: var(--primary); }
+.ga-bill b .ic { width: 16px; height: 16px; }
+.ga-bill i { display: block; width: 52px; height: 4px; margin-bottom: 6px; border-radius: 2px; background: var(--field-border); }
+.ga-bill .ga-amount { left: 10px; bottom: 8px; font: 700 13px/1 system-ui, sans-serif; color: var(--text); direction: ltr; }
+.ga-bills .ga-paybtn {
+  left: 40px; top: 78px; width: 90px; height: 28px; display: flex !important; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 9px; background: var(--primary); color: var(--on-primary); font-size: 11px; font-weight: 600; direction: rtl;
+}
+.ga-bills .ga-paybtn .ic { position: static; width: 13px; height: 13px; }
+.ga-bills .ga-paid {
+  left: 138px; top: 80px; height: 24px; padding: 0 8px; border-radius: 12px; background: var(--ok-bg); color: var(--ok);
+  font-size: 11px; font-weight: 600; line-height: 24px; direction: rtl; transform: scale(0); animation: ga-pop-late 4s infinite;
+}
+.ga-bills .ga-finger { left: 72px; top: 80px; animation: ga-tap-add 4s infinite; }
 .guide-body { color: var(--text-2); }
 .guide-body p, .guide-body ul, .guide-body ol { margin: 0 0 10px; }
 .guide-body ul, .guide-body ol { padding-inline-start: 20px; }
@@ -582,6 +601,7 @@ body.dark { background: var(--lock-bg); color: var(--lock-text); }
 .lock-sub { color: var(--lock-text); margin: 4px 0 32px; }
 .lock-form { width: 100%; max-width: 400px; display: grid; gap: 12px; text-align: start; }
 .lock-note { color: var(--lock-text); font-size: 14px; }
+.lock-share { max-width: 400px; margin: -20px 0 24px; padding: 10px 14px; border-radius: 12px; background: var(--tint); color: var(--primary); font-size: 14px; }
 .lock .link-btn + .link-btn { margin-top: 4px; }
 .pin-input { font-size: 22px; letter-spacing: .3em; text-align: center; }
 .field-dark { margin-bottom: 4px; }
@@ -626,6 +646,32 @@ body.away #app, body.away dialog { visibility: hidden; }
 .badge-ok { background: var(--ok-bg); color: var(--ok); }
 .badge-warn { background: var(--warn-bg); color: var(--warn); }
 .badge-bad { background: var(--danger-bg); color: var(--danger); }
+.badge-off { background: var(--off-bg); color: var(--off); }
+.doc-card.is-paid { opacity: .62; }
+.doc-thumb.is-bill { background: var(--tint); }
+.due { margin-bottom: 28px; }
+
+/* ---------- Payments ---------- */
+.ltr { direction: ltr; text-align: left; }
+.ltr::placeholder { text-align: right; }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0 12px; }
+.paste-btn { margin-bottom: 18px; }
+.attach { display: flex; align-items: center; gap: 10px; }
+.attach-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 14px; overflow-wrap: anywhere; }
+.attach-name .ic { width: 18px; height: 18px; }
+.bill-card { display: grid; justify-items: start; gap: 12px; margin-bottom: 24px; }
+.bill-amount { font-size: 34px; font-weight: 700; line-height: 1.1; }
+.bill-card .badge { margin: 0; }
+.bill-pay { margin-top: 4px; }
+.bill-host { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 15px; overflow-wrap: anywhere; }
+.bill-host .ic { width: 18px; height: 18px; color: var(--primary); }
+.bill-host bdi { font-weight: 600; }
+.bill-tip { color: var(--text-2); font-size: 13px; }
+.bill-actions { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.bill-actions .btn { flex: 1 1 140px; }
+.bill-card.is-paid .bill-amount { color: var(--text-2); }
+.bill-msg { white-space: pre-line; overflow-wrap: anywhere; color: var(--text); font-size: 15px; }
+.bill-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 /* ---------- Add / edit document ---------- */
 select.input { appearance: none; padding-inline-end: 40px; background: var(--field-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa3b2' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 12px center / 20px; }

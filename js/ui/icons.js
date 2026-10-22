@@ -44,7 +44,17 @@ const PATHS = {
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
   book: '<path d="M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M20 19v2H6"/>',
   shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z"/>',
-  chevron: '<path d="m15 6-6 6 6 6"/>'
+  chevron: '<path d="m15 6-6 6 6 6"/>',
+  receipt: '<path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  flame: '<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6.5-4-10-2 1.5-3 3.5-3 6-1-1-1.5-2-1.5-3.5C8 9.5 5 12 5 15a7 7 0 0 0 7 7z"/>',
+  drop: '<path d="M12 3s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/>',
+  building: '<path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h3a1 1 0 0 1 1 1v11M2 21h20M8 7h4M8 11h4M8 15h4"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  external: '<path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
+  check: '<path d="m5 12 5 5 9-10"/>',
+  paste: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 11h6M9 15h4"/>',
+  paperclip: '<path d="m21 11-8.6 8.6a5 5 0 0 1-7-7l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7L10 17.4a1.7 1.7 0 0 1-2.4-2.4l8-8"/>'
 };
 
 export function icon(name, cls = '') {
@@ -63,6 +73,11 @@ export const FOLDER_ICONS = [
   { key: 'plane', label: 'נסיעות' },
   { key: 'school', label: 'לימודים' },
   { key: 'money', label: 'כספים' },
+  { key: 'receipt', label: 'חשבונות' },
+  { key: 'bolt', label: 'חשמל' },
+  { key: 'flame', label: 'גז' },
+  { key: 'drop', label: 'מים' },
+  { key: 'building', label: 'ארנונה' },
   { key: 'file', label: 'מסמך' },
   { key: 'folder', label: 'תיקייה' }
 ];

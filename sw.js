@@ -1,5 +1,5 @@
 // Offline support: precache the app shell, serve it cache-first.
-const CACHE_VERSION = '0.8.1'; // keep in sync with js/version.js
+const CACHE_VERSION = '0.9.0'; // keep in sync with js/version.js
 const CACHE = `idfold-${CACHE_VERSION}`;
 
 const SHELL = [
@@ -35,6 +35,9 @@ const SHELL = [
   './js/ui/icons.js',
   './js/ui/sheet.js',
   './js/ui/tabbar.js',
+  './js/ui/bills.js',
+  './js/views/bill.js',
+  './js/share.js',
   './js/ui/menu.js',
   './js/ui/guide.js',
   './js/ui/util.js',
@@ -104,10 +107,38 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Shared from another app through the Android share sheet (manifest share_target). Held in this
+// worker's memory only, until the app takes it after the redirect; never written anywhere.
+const SHARE_TTL_MS = 2 * 60 * 1000;
+let shared = null;
+
+async function receiveShare(req) {
+  try {
+    const form = await req.formData();
+    const text = (name) => String(form.get(name) || '').slice(0, 4000);
+    const file = form.getAll('file').find((f) => f instanceof File && f.size > 0) || null;
+    shared = { title: text('title'), text: text('text'), url: text('url'), file, at: Date.now() };
+  } catch {
+    shared = null;
+  }
+  return Response.redirect(new URL('./?share=1', self.registration.scope).href, 303);
+}
+
+self.addEventListener('message', (event) => {
+  if (event.data !== 'take-share' || !event.ports[0]) return;
+  const fresh = shared && Date.now() - shared.at < SHARE_TTL_MS ? shared : null;
+  shared = null;
+  event.ports[0].postMessage(fresh);
+});
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  if (req.method === 'POST' && url.origin === self.location.origin && url.pathname.endsWith('/share')) {
+    event.respondWith(receiveShare(req));
+    return;
+  }
+  if (req.method !== 'GET') return;
 
   if (url.origin !== self.location.origin) return;
 
