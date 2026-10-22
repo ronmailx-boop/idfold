@@ -1,2 +1,2 @@
 // Keep in sync with CACHE_VERSION in sw.js.
-export const APP_VERSION = '0.7.0';
+export const APP_VERSION = '0.7.1';
