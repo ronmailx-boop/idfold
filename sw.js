@@ -1,5 +1,5 @@
 // Offline support: precache the app shell, serve it cache-first.
-const CACHE_VERSION = '0.8.0'; // keep in sync with js/version.js
+const CACHE_VERSION = '0.8.1'; // keep in sync with js/version.js
 const CACHE = `idfold-${CACHE_VERSION}`;
 
 const SHELL = [
@@ -8,14 +8,14 @@ const SHELL = [
   './manifest.webmanifest',
   './css/app.css',
   './css/fonts.css',
-  './vendor/fonts/frank-ruhl-libre-hebrew-700-normal.woff2',
-  './vendor/fonts/frank-ruhl-libre-latin-700-normal.woff2',
-  './vendor/fonts/ibm-plex-sans-hebrew-hebrew-400-normal.woff2',
-  './vendor/fonts/ibm-plex-sans-hebrew-hebrew-500-normal.woff2',
-  './vendor/fonts/ibm-plex-sans-hebrew-hebrew-600-normal.woff2',
-  './vendor/fonts/ibm-plex-sans-hebrew-latin-400-normal.woff2',
-  './vendor/fonts/ibm-plex-sans-hebrew-latin-500-normal.woff2',
-  './vendor/fonts/ibm-plex-sans-hebrew-latin-600-normal.woff2',
+  './vendor/fonts/noto-sans-hebrew-hebrew-400-normal.woff2',
+  './vendor/fonts/noto-sans-hebrew-hebrew-500-normal.woff2',
+  './vendor/fonts/noto-sans-hebrew-hebrew-600-normal.woff2',
+  './vendor/fonts/noto-sans-hebrew-hebrew-700-normal.woff2',
+  './vendor/fonts/noto-sans-hebrew-latin-400-normal.woff2',
+  './vendor/fonts/noto-sans-hebrew-latin-500-normal.woff2',
+  './vendor/fonts/noto-sans-hebrew-latin-600-normal.woff2',
+  './vendor/fonts/noto-sans-hebrew-latin-700-normal.woff2',
   './js/app.js',
   './js/db.js',
   './js/router.js',
