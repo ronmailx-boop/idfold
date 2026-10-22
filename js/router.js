@@ -1,4 +1,4 @@
-// Hash router: #/  #/folder/<id>  #/doc/<id>  #/settings
+// Hash router: (home, no hash)  #/folder/<id>  #/doc/<id>  #/settings
 // Keeps an in-app stack so "back" follows real navigation history.
 const stack = [];
 let handler = null;
@@ -10,6 +10,8 @@ function current() {
 
 function onHashChange() {
   const hash = location.hash || '#/';
+  // Home keeps a clean address (no "#/"), e.g. when the page is shared.
+  if (hash === '#/' && location.hash) history.replaceState(history.state, '', location.pathname + location.search);
   if (stack.at(-2) === hash) stack.pop();
   else if (stack.at(-1) !== hash) stack.push(hash);
   handler(current());
