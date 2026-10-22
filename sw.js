@@ -1,5 +1,5 @@
 // Offline support: precache the app shell, serve it cache-first.
-const CACHE_VERSION = '0.6.5'; // keep in sync with js/version.js
+const CACHE_VERSION = '0.7.0'; // keep in sync with js/version.js
 const CACHE = `idfold-${CACHE_VERSION}`;
 const FONT_CACHE = 'idfold-fonts';
 
@@ -26,6 +26,7 @@ const SHELL = [
   './js/views/lock.js',
   './js/ui/icons.js',
   './js/ui/sheet.js',
+  './js/ui/guide.js',
   './js/ui/util.js',
   './js/ui/folder-sheets.js',
   './js/views/home.js',

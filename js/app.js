@@ -7,6 +7,7 @@ import * as google from './google.js';
 import './install.js';
 import { start, currentRoute } from './router.js';
 import { renderSetup } from './views/setup.js';
+import * as guide from './ui/guide.js';
 import { renderLock } from './views/lock.js';
 import { renderHome, resetHome } from './views/home.js';
 import { renderFolder } from './views/folder.js';
@@ -59,6 +60,7 @@ async function enterApp() {
     routerStarted = true;
     start(onRoute);
   }
+  guide.showOnce().catch(() => {});
 }
 
 function showFatal(title, text) {

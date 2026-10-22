@@ -154,6 +154,11 @@ a { color: var(--primary-ink); }
 .grid.is-dragging { touch-action: none; }
 
 .hint { margin-top: 12px; color: var(--text-2); font-size: 13px; text-align: center; }
+.guide-link { text-align: center; }
+.guide-link button {
+  min-height: 44px; padding: 0 12px; background: none; border: 0;
+  color: var(--primary-ink); font-size: 13px; text-decoration: underline; text-underline-offset: 3px;
+}
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -246,6 +251,31 @@ a { color: var(--primary-ink); }
 .sheet-msg { color: var(--text-2); margin-bottom: 20px; }
 .sheet-actions { display: grid; gap: 10px; margin-top: 20px; }
 .sheet-menu { display: grid; margin: 8px -20px 0; }
+
+/* ---------- First-run guide ---------- */
+.guide-top { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-top: -8px; }
+.guide-count { color: var(--text-2); font-size: 13px; }
+.guide-skip { min-height: 44px; padding: 0 4px; background: none; border: 0; color: var(--primary-ink); font-size: 15px; }
+.guide-icon {
+  display: grid; place-items: center; width: 56px; height: 56px; margin: 4px 0 12px;
+  border-radius: 16px; background: #ece6ff; color: var(--primary-ink);
+}
+.guide-icon svg { width: 28px; height: 28px; }
+.guide-body { color: var(--text-2); }
+.guide-body p, .guide-body ul, .guide-body ol { margin: 0 0 10px; }
+.guide-body ul, .guide-body ol { padding-inline-start: 20px; }
+.guide-body li + li { margin-top: 6px; }
+.guide-body strong { color: var(--text); }
+.guide-ui {
+  display: inline-block; padding: 0 8px; border-radius: 8px;
+  background: #ece6ff; color: var(--primary-deep); font-weight: 500; white-space: nowrap;
+}
+.guide-dots { display: flex; justify-content: center; gap: 6px; margin: 18px 0 4px; }
+.guide-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--card-border); }
+.guide-dots span.on { width: 20px; border-radius: 4px; background: var(--primary); }
+.guide-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.guide-nav .btn { flex: 1; }
+.guide-nav [data-drive] { flex-basis: 100%; order: -1; }
 .sheet-menu .row { padding-inline: 20px; }
 .sheet-menu .row + .row { border-top: 0; }
 

@@ -14,6 +14,7 @@ import { paintChip, formatWhen } from '../ui/sync.js';
 import * as quick from '../quick.js';
 import * as autolock from '../autolock.js';
 import { installMode, install } from '../install.js';
+import { openGuide } from '../ui/guide.js';
 
 export function renderSettings(app) {
   app.innerHTML = `
@@ -88,6 +89,10 @@ export function renderSettings(app) {
     <section class="group" aria-labelledby="g-about">
       <h2 class="group-title" id="g-about">מידע</h2>
       <div class="card">
+        <button type="button" class="row" id="open-guide">
+          <span class="row-icon">${icon('file')}</span>
+          <span class="row-text">מדריך שימוש<small>הסבר קצר על כל מה שאפשר לעשות באפליקציה</small></span>
+        </button>
         <a class="row" href="privacy.html" target="_blank" rel="noopener">
           <span class="row-icon">${icon('file')}</span>
           <span class="row-text">מדיניות פרטיות</span>
@@ -112,6 +117,7 @@ export function renderSettings(app) {
   app.querySelector('#new-code').onclick = newRecoveryCodeSheet;
   bindQuick(app);
   bindInstall(app);
+  app.querySelector('#open-guide').onclick = openGuide;
   app.querySelector('#wipe').onclick = async () => {
     const ok = await confirmSheet({
       title: 'למחוק את כל הנתונים?',

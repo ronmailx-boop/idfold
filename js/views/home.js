@@ -5,6 +5,7 @@ import { createFolderFlow } from '../ui/folder-sheets.js';
 import { docCard, addDocFlow } from '../ui/docs.js';
 import * as sync from '../sync.js';
 import { paintChip } from '../ui/sync.js';
+import { openGuide } from '../ui/guide.js';
 
 // Kept while the app is open, so coming back from a document keeps the results.
 let query = '';
@@ -85,8 +86,10 @@ function renderBody(body) {
         </button>
       </li>
     </ul>
-    <p class="hint">לחיצה ארוכה על תיקייה וגרירה משנות את הסדר</p>`;
+    <p class="hint">לחיצה ארוכה על תיקייה וגרירה משנות את הסדר</p>
+    <p class="guide-link"><button type="button" id="open-guide">מדריך שימוש</button></p>`;
   body.querySelector('#new-folder').onclick = createFolderFlow;
+  body.querySelector('#open-guide').onclick = openGuide;
   enableReorder(body.querySelector('#folder-grid'));
 }
 
