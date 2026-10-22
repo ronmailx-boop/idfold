@@ -64,5 +64,5 @@
 אם נעדכן את המדיניות, נפרסם את הגרסה החדשה בדף זה ונעדכן את תאריך העדכון בראשו.
 
 ## 12. יצירת קשר
-V+ Studio
+vplus studio
 מייל: [vplusstudio.app@gmail.com](mailto:vplusstudio.app@gmail.com)
