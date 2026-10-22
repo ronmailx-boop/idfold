@@ -85,7 +85,25 @@ export function renderSettings(app) {
       </div>
     </section>
 
-    <p class="app-version">IDfold · גרסה ${APP_VERSION}</p>`;
+    <section class="group" aria-labelledby="g-about">
+      <h2 class="group-title" id="g-about">מידע</h2>
+      <div class="card">
+        <a class="row" href="privacy.html" target="_blank" rel="noopener">
+          <span class="row-icon">${icon('file')}</span>
+          <span class="row-text">מדיניות פרטיות</span>
+        </a>
+        <a class="row" href="terms.html" target="_blank" rel="noopener">
+          <span class="row-icon">${icon('file')}</span>
+          <span class="row-text">תנאי שימוש</span>
+        </a>
+        <a class="row" href="accessibility.html" target="_blank" rel="noopener">
+          <span class="row-icon">${icon('file')}</span>
+          <span class="row-text">הצהרת נגישות</span>
+        </a>
+      </div>
+    </section>
+
+    <p class="app-version">IDfold · גרסה ${APP_VERSION} · V+ Studio</p>`;
 
   app.classList.add('no-bar');
   app.querySelector('[data-back]').onclick = back;

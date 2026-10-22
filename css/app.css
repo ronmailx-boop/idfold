@@ -431,4 +431,6 @@ input[type="date"].input { min-width: 0; }
 
 /* ---------- Restore ---------- */
 .setup .link-btn { margin: 0 auto; color: var(--primary); }
+.legal-links { text-align: center; font-size: 13px; color: var(--text-2); }
+.legal-links a { color: inherit; }
 .restore-progress { color: var(--text-2); font-size: 14px; }

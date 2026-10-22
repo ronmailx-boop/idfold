@@ -23,6 +23,7 @@ export function renderSetup(app, onCreated) {
         </form>
       </div>
       ${google.isConfigured() ? '<button type="button" class="link-btn" data-restore>יש לי גיבוי ב-Google Drive</button>' : ''}
+      <p class="legal-links"><a href="privacy.html" target="_blank" rel="noopener">מדיניות פרטיות</a> · <a href="terms.html" target="_blank" rel="noopener">תנאי שימוש</a> · <a href="accessibility.html" target="_blank" rel="noopener">נגישות</a></p>
     </div>`;
   app.classList.add('no-bar');
 

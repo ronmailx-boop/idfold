@@ -1,5 +1,5 @@
 // Offline support: precache the app shell, serve it cache-first.
-const CACHE_VERSION = '0.6.2'; // keep in sync with js/version.js
+const CACHE_VERSION = '0.6.3'; // keep in sync with js/version.js
 const CACHE = `idfold-${CACHE_VERSION}`;
 const FONT_CACHE = 'idfold-fonts';
 
@@ -45,7 +45,12 @@ const SHELL = [
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/icon-maskable-512.png'
+  './icons/icon-maskable-512.png',
+  './css/legal.css',
+  './privacy.html',
+  './terms.html',
+  './cookies.html',
+  './accessibility.html'
 ];
 
 // Some hosts (Cloudflare) redirect index.html to "/". A browser refuses a redirected response
@@ -55,6 +60,16 @@ async function unredirect(response) {
   return new Response(await response.blob(), {
     status: response.status, statusText: response.statusText, headers: response.headers
   });
+}
+
+// Cloudflare serves privacy.html at /privacy: map a navigation back to the cached .html copy.
+function prettyToHtml(href) {
+  const u = new URL(href);
+  u.search = '';
+  u.hash = '';
+  if (u.pathname.endsWith('/')) u.pathname += 'index.html';
+  else if (!/\.[a-z0-9]+$/i.test(u.pathname)) u.pathname += '.html';
+  return u.href;
 }
 
 async function precache() {
@@ -98,9 +113,15 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== self.location.origin) return;
 
-  // Navigations always get the app shell (routing is hash based).
+  // The app itself (routing is hash based) always gets the cached shell. Other pages
+  // (privacy, terms…) come from the network, or from the cache when offline.
   if (req.mode === 'navigate') {
-    event.respondWith(caches.match('./index.html').then((cached) => cached || fetch(req)));
+    const page = prettyToHtml(req.url);
+    if (page === new URL('./index.html', self.registration.scope).href) {
+      event.respondWith(caches.match('./index.html').then((cached) => cached || fetch(req)));
+    } else {
+      event.respondWith(fetch(req).catch(async () => (await caches.match(page)) || Response.error()));
+    }
     return;
   }
 

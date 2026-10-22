@@ -5,7 +5,7 @@
 
 כתובת האפליקציה: https://idfold.vplusstudio.app (הכתובת הרשמית, Cloudflare). גם https://ronmailx-boop.github.io/idfold/ ממשיכה לעבוד, אבל לכל כתובת כספת נפרדת במכשיר.
 
-> **סטטוס:** כל 6 השלבים הושלמו (גרסה 0.6.2): כספת מוצפנת, סנכרון עם Google Drive, שחזור במכשיר חדש, פתיחה מהירה ונעילה אוטומטית.
+> **סטטוס:** כל 6 השלבים הושלמו (גרסה 0.6.3): כספת מוצפנת, סנכרון עם Google Drive, שחזור במכשיר חדש, פתיחה מהירה ונעילה אוטומטית.
 
 ## אבטחה בקצרה
 
@@ -98,6 +98,7 @@
 | `js/quick.js` | פתיחה מהירה: PIN וטביעת אצבע (מקומי בלבד) |
 | `js/autolock.js` | נעילה אוטומטית |
 | `js/install.js` | התקנה במסך הבית |
+| `docs/legal/` | מסמכים משפטיים (המקור). `npm run legal` בונה מהם את `privacy.html`, `terms.html`, `cookies.html`, `accessibility.html` |
 | `vendor/pdfjs/` | pdf.js 4.10.38 של Mozilla (רישיון Apache-2.0), נשמר בריפו |
 | `js/views/` | המסכים |
 | `js/ui/` | רכיבים משותפים (אייקונים, bottom sheet) |
